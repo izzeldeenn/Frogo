@@ -6,8 +6,8 @@ import { useGamification } from '@/contexts/GamificationContext';
 
 interface Task {
   id: string;
-  name: string;
-  reward: number;
+  title: string;
+  points: number;
   completed: boolean;
 }
 
@@ -25,7 +25,7 @@ export function CoinsButton() {
       {/* Coins Button */}
       <button
         onClick={handleOpenGamification}
-        className={`flex items-center space-x-2 space-x-reverse p-2 border-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+        className={`flex items-center space-x-2 space-x-reverse p-2 border-2 rounded-lg transition-all duration-200 hover:scale-105 h-14 ${
           theme === 'light'
             ? 'border-yellow-500 bg-yellow-50 hover:bg-yellow-100'
             : 'border-yellow-600 bg-yellow-900/30 hover:bg-yellow-900/50'
@@ -106,10 +106,10 @@ export function CoinsButton() {
                       <div>
                         <div className={`font-medium ${
                           theme === 'light' ? 'text-black' : 'text-white'
-                        }`}>{task.name}</div>
+                        }`}>{task.title}</div>
                         <div className={`text-sm ${
                           theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                        }`}>+{task.reward} عملة</div>
+                        }`}>+{task.points} عملة</div>
                       </div>
                       <button className={`px-3 py-1 border-2 rounded text-sm font-medium transition-colors ${
                         theme === 'light'

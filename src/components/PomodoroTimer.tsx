@@ -13,7 +13,7 @@ interface PomodoroSettings {
 
 export function PomodoroTimer() {
   const { theme } = useTheme();
-  const { getCurrentUser, updateUserStudyTime } = useUser();
+  const { getCurrentDeviceUser, updateDeviceStudyTime, setTimerActive } = useUser();
   const [settings, setSettings] = useState<PomodoroSettings>({
     workMinutes: 25,
     shortBreakMinutes: 5,
@@ -30,31 +30,31 @@ export function PomodoroTimer() {
 
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
+      setTimerActive(true);
       intervalRef.current = setInterval(() => {
         setTimeLeft(prev => prev - 1);
         
         // Update user study time every second during work session
         if (currentSession === 'work') {
-          const currentUser = getCurrentUser();
-          if (currentUser) {
-            updateUserStudyTime(currentUser.id, 1); // Add 1 second of study time
-          }
+          updateDeviceStudyTime(1); // Add 1 second of study time
         }
       }, 1000);
     } else if (timeLeft === 0) {
       handleSessionComplete();
     } else {
+      setTimerActive(false);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     }
 
     return () => {
+      setTimerActive(false);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, timeLeft, currentSession, getCurrentUser, updateUserStudyTime]);
+  }, [isRunning, timeLeft, currentSession, updateDeviceStudyTime, setTimerActive]);
 
   const handleSessionComplete = () => {
     setIsRunning(false);
@@ -128,19 +128,6 @@ export function PomodoroTimer() {
 
   return (
     <div className="text-center">
-      {!getCurrentUser() && (
-        <div className={`mb-4 p-3 border-2 rounded-lg ${
-          theme === 'light'
-            ? 'border-yellow-400 bg-yellow-50'
-            : 'border-yellow-600 bg-yellow-900/30'
-        }`}>
-          <p className={`text-sm ${
-            theme === 'light' ? 'text-yellow-800' : 'text-yellow-200'
-          }`}>
-            يرجى اختيار مستخدم لتسجيل وقت الدراسة
-          </p>
-        </div>
-      )}
       <div className="mb-6">
         <div className={`inline-block px-4 py-2 border-2 rounded-lg ${getSessionColor()}`}>
           <h2 className={`text-xl font-bold ${

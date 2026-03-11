@@ -5,10 +5,9 @@ import { Logo } from '@/components/Logo';
 import { UserRankings } from '@/components/UserRankings';
 import { TimerSelector } from '@/components/TimerSelector';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { UserManager } from '@/components/UserManager';
-import { CurrentUserSelector } from '@/components/CurrentUserSelector';
 import { CoinsButton } from '@/components/CoinsButton';
 import { UserProfile } from '@/components/UserProfile';
+import { useUser } from '@/contexts/UserContext';
 
 export default function Home() {
   const { theme } = useTheme();
@@ -27,14 +26,12 @@ export default function Home() {
           <Logo />
           <ThemeToggle />
         </div>
-        <UserManager />
-        <CurrentUserSelector />
         <UserRankings />
       </div>
       
       {/* Right section - 3/4 width */}
       <div className="w-3/4 flex items-center justify-center p-8 relative">
-        <div className="absolute top-4 left-4 flex flex-col items-center space-y-2 space-y-reverse z-20">
+        <div className="absolute top-4 left-4 flex items-center space-x-4 space-x-reverse z-20">
           <CoinsButton />
           <UserProfile />
         </div>

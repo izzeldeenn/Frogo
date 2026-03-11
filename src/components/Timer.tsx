@@ -6,7 +6,7 @@ import { useUser } from '@/contexts/UserContext';
 
 export function Timer() {
   const { theme } = useTheme();
-  const { getCurrentUser, updateUserStudyTime } = useUser();
+  const { getCurrentDeviceUser, updateDeviceStudyTime, setTimerActive } = useUser();
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -14,18 +14,17 @@ export function Timer() {
 
   useEffect(() => {
     if (isRunning) {
+      setTimerActive(true);
       intervalRef.current = setInterval(() => {
         setTime(prevTime => prevTime + 10);
       }, 10);
       
-      // Update user study time every second
+      // Update device study time every second
       studyTimeRef.current = setInterval(() => {
-        const currentUser = getCurrentUser();
-        if (currentUser) {
-          updateUserStudyTime(currentUser.id, 1); // Add 1 second of study time
-        }
+        updateDeviceStudyTime(1); // Add 1 second of study time
       }, 1000);
     } else {
+      setTimerActive(false);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
@@ -35,6 +34,7 @@ export function Timer() {
     }
 
     return () => {
+      setTimerActive(false);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
@@ -42,7 +42,7 @@ export function Timer() {
         clearInterval(studyTimeRef.current);
       }
     };
-  }, [isRunning, getCurrentUser, updateUserStudyTime]);
+  }, [isRunning, updateDeviceStudyTime, setTimerActive]);
 
   const formatTime = (milliseconds: number) => {
     const totalSeconds = Math.floor(milliseconds / 1000);
@@ -64,19 +64,6 @@ export function Timer() {
 
   return (
     <div className="text-center">
-      {!getCurrentUser() && (
-        <div className={`mb-4 p-3 border-2 rounded-lg ${
-          theme === 'light'
-            ? 'border-yellow-400 bg-yellow-50'
-            : 'border-yellow-600 bg-yellow-900/30'
-        }`}>
-          <p className={`text-sm ${
-            theme === 'light' ? 'text-yellow-800' : 'text-yellow-200'
-          }`}>
-            يرجى اختيار مستخدم لتسجيل وقت الدراسة
-          </p>
-        </div>
-      )}
       <h1 className={`text-6xl font-bold mb-8 font-mono ${
         theme === 'light' ? 'text-black' : 'text-white'
       }`}>

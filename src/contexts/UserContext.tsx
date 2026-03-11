@@ -2,68 +2,132 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useGamification } from './GamificationContext';
+import { getDeviceId, getDeviceInfo } from '@/utils/deviceId';
 
-interface User {
-  id: number;
+interface DeviceUser {
+  deviceId: string;
   name: string;
+  avatar?: string;
   score: number;
   rank: number;
   studyTime: number; // in seconds
+  createdAt: string;
+  lastActive: string;
 }
 
 interface UserContextType {
-  users: User[];
-  addUser: (name: string) => void;
-  updateUserStudyTime: (userId: number, additionalTime: number) => void;
-  getCurrentUser: () => User | null;
-  removeUser: (userId: number) => void;
+  users: DeviceUser[];
+  getCurrentDeviceUser: () => DeviceUser | null;
+  updateDeviceUserName: (name: string) => void;
+  updateDeviceUserAvatar: (avatar: string) => void;
+  updateDeviceStudyTime: (additionalTime: number) => void;
+  getAllDeviceUsers: () => DeviceUser[];
+  setTimerActive: (isActive: boolean) => void;
+  isTimerActive: () => boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const { addCoins, removeCoins } = useGamification();
-  const [users, setUsers] = useState<User[]>([]);
+  const { addCoins } = useGamification();
+  const [users, setUsers] = useState<DeviceUser[]>([]);
+  const [currentDeviceId, setCurrentDeviceId] = useState<string>('');
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   useEffect(() => {
-    // Load users from localStorage on mount
-    const savedUsers = localStorage.getItem('fahman_hub_users');
+    // Get device ID and load users
+    const deviceId = getDeviceId();
+    setCurrentDeviceId(deviceId);
+    
+    // Load users from localStorage
+    const savedUsers = localStorage.getItem('fahman_hub_device_users');
     if (savedUsers) {
       try {
         const parsedUsers = JSON.parse(savedUsers);
         setUsers(parsedUsers);
+        
+        // Check if current device exists, if not create it
+        const existingDevice = parsedUsers.find((user: DeviceUser) => user.deviceId === deviceId);
+        if (!existingDevice) {
+          createDeviceUser(deviceId);
+        }
       } catch (error) {
         console.error('Error loading users:', error);
+        createDeviceUser(deviceId);
       }
+    } else {
+      createDeviceUser(deviceId);
     }
   }, []);
 
   useEffect(() => {
     // Save users to localStorage whenever they change
-    localStorage.setItem('fahman_hub_users', JSON.stringify(users));
+    localStorage.setItem('fahman_hub_device_users', JSON.stringify(users));
   }, [users]);
 
-  const addUser = (name: string) => {
-    const newUser: User = {
-      id: Date.now(),
-      name,
+  const createDeviceUser = (deviceId: string) => {
+    const deviceInfo = getDeviceInfo();
+    const newUser: DeviceUser = {
+      deviceId,
+      name: `جهاز ${deviceId.slice(-6)}`,
       score: 0,
       rank: users.length + 1,
-      studyTime: 0
+      studyTime: 0,
+      createdAt: deviceInfo.createdAt,
+      lastActive: new Date().toISOString()
     };
-    setUsers(prev => [...prev, newUser]);
+    setUsers(prev => {
+      const updated = [...prev, newUser];
+      // Sort and update ranks
+      updated.sort((a, b) => b.score - a.score);
+      updated.forEach((user, index) => {
+        user.rank = index + 1;
+      });
+      return updated;
+    });
   };
 
-  const updateUserStudyTime = (userId: number, additionalTime: number) => {
+  const updateDeviceUserName = (name: string) => {
+    if (!currentDeviceId) return;
+    
     setUsers(prevUsers => {
       const newUsers = prevUsers.map(user => {
-        if (user.id === userId) {
+        if (user.deviceId === currentDeviceId) {
+          return { ...user, name, lastActive: new Date().toISOString() };
+        }
+        return user;
+      });
+      return newUsers;
+    });
+  };
+
+  const updateDeviceUserAvatar = (avatar: string) => {
+    if (!currentDeviceId) return;
+    
+    setUsers(prevUsers => {
+      const newUsers = prevUsers.map(user => {
+        if (user.deviceId === currentDeviceId) {
+          return { ...user, avatar, lastActive: new Date().toISOString() };
+        }
+        return user;
+      });
+      return newUsers;
+    });
+  };
+
+  const updateDeviceStudyTime = (additionalTime: number) => {
+    if (!currentDeviceId) return;
+    
+    setUsers(prevUsers => {
+      const newUsers = prevUsers.map(user => {
+        if (user.deviceId === currentDeviceId) {
           const pointsEarned = Math.floor(additionalTime / 10); // 1 point per 10 seconds
           addCoins(pointsEarned); // Add coins to gamification system
           return {
             ...user,
             studyTime: user.studyTime + additionalTime,
-            score: user.score + pointsEarned
+            score: user.score + pointsEarned,
+            lastActive: new Date().toISOString()
           };
         }
         return user;
@@ -79,25 +143,33 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const getCurrentUser = (): User | null => {
-    const currentUserId = localStorage.getItem('fahman_hub_current_user');
-    if (currentUserId) {
-      return users.find(user => user.id === parseInt(currentUserId)) || null;
-    }
-    return null;
+  const getCurrentDeviceUser = (): DeviceUser | null => {
+    if (!currentDeviceId) return null;
+    return users.find(user => user.deviceId === currentDeviceId) || null;
   };
 
-  const removeUser = (userId: number) => {
-    setUsers(prev => prev.filter(user => user.id !== userId));
+  const getAllDeviceUsers = (): DeviceUser[] => {
+    return users.sort((a, b) => b.score - a.score);
+  };
+
+  const setTimerActive = (isActive: boolean) => {
+    setIsTimerRunning(isActive);
+  };
+
+  const isTimerActive = (): boolean => {
+    return isTimerRunning;
   };
 
   return (
     <UserContext.Provider value={{
       users,
-      addUser,
-      updateUserStudyTime,
-      getCurrentUser,
-      removeUser
+      getCurrentDeviceUser,
+      updateDeviceUserName,
+      updateDeviceUserAvatar,
+      updateDeviceStudyTime,
+      getAllDeviceUsers,
+      setTimerActive,
+      isTimerActive
     }}>
       {children}
     </UserContext.Provider>
