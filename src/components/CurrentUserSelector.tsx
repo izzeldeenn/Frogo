@@ -5,9 +5,10 @@ import { useUser } from '@/contexts/UserContext';
 
 export function CurrentUserSelector() {
   const { theme } = useTheme();
-  const { getCurrentDeviceUser } = useUser();
+  const { getCurrentDeviceUser, isTimerActive } = useUser();
   
   const currentUser = getCurrentDeviceUser();
+  const isActive = isTimerActive();
 
   return (
     <div className="mb-6">
@@ -27,13 +28,15 @@ export function CurrentUserSelector() {
             }`}>
               {currentUser.name}
             </span>
-            <span className={`text-xs px-2 py-1 rounded ${
-              theme === 'light'
-                ? 'bg-green-600 text-white'
-                : 'bg-green-500 text-white'
-            }`}>
-              نشط
-            </span>
+            {isActive && (
+              <span className={`text-xs px-2 py-1 rounded-full animate-pulse ${
+                theme === 'light'
+                  ? 'bg-green-500 text-white'
+                  : 'bg-green-600 text-white'
+              }`}>
+                نشط
+              </span>
+            )}
           </div>
           <div className={`text-xs mt-1 ${
             theme === 'light' ? 'text-gray-600' : 'text-gray-400'

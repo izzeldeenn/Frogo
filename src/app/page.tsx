@@ -3,6 +3,7 @@
 import { useTheme } from '@/contexts/ThemeContext';
 import { Logo } from '@/components/Logo';
 import { UserRankings } from '@/components/UserRankings';
+import { CurrentUserSelector } from '@/components/CurrentUserSelector';
 import { TimerSelector } from '@/components/TimerSelector';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { CoinsButton } from '@/components/CoinsButton';
@@ -26,6 +27,7 @@ export default function Home() {
           <Logo />
           <ThemeToggle />
         </div>
+        <CurrentUserSelector />
         <UserRankings />
       </div>
       
