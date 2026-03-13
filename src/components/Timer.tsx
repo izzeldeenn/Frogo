@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useUser } from '@/contexts/UserContext';
+import { useFullscreen } from '@/contexts/FullscreenContext';
 
 export function Timer() {
   const { theme } = useTheme();
   const { getCurrentUser, updateUserStudyTime, setTimerActive } = useUser();
+  const { showFullscreenPrompt, setShowFullscreenPrompt, requestFullscreen } = useFullscreen();
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -76,7 +78,14 @@ export function Timer() {
       .padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
   };
 
-  const handleStart = () => setIsRunning(true);
+  const handleStart = () => {
+    // Check if fullscreen is active, if not show prompt
+    if (!document.fullscreenElement) {
+      setShowFullscreenPrompt(true);
+      return;
+    }
+    setIsRunning(true);
+  };
   const handleStop = () => setIsRunning(false);
   const handleReset = () => {
     setIsRunning(false);
