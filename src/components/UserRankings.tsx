@@ -122,7 +122,20 @@ export function UserRankings() {
                       {user.rank}
                     </div>
                     
-                    <div className="text-xl">{user.avatar || '👤'}</div>
+                    <div className="text-xl">
+                      {user.avatar?.startsWith('http') ? (
+                        <img 
+                          src={user.avatar} 
+                          alt={user.username}
+                          className="w-8 h-8 rounded-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        '👤'
+                      )}
+                    </div>
                     
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">

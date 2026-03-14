@@ -7,7 +7,23 @@ import { useUser } from '@/contexts/UserContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
-const AVATARS = ['😀', '😎', '🤓', '🦄', '🚀', '⭐', '🌟', '💫', '🔥', '⚡', '🎯', '🏆', '🎨', '🎭', '🎪'];
+const AVATARS = [
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar1',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar2',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar3',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar4',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar5',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar6',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar7',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar8',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar9',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar10',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar11',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar12',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar13',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar14',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar15'
+];
 
 export function CurrentUserSelector() {
   const { theme } = useTheme();
@@ -17,6 +33,7 @@ export function CurrentUserSelector() {
   const [showSettings, setShowSettings] = useState(false);
   const [username, setUsername] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('');
+  const [customAvatarUrl, setCustomAvatarUrl] = useState('');
 
   const currentUser = getCurrentUser();
   const isActive = isTimerActive();
@@ -25,7 +42,9 @@ export function CurrentUserSelector() {
     if (username.trim()) {
       updateUserName(username.trim());
     }
-    if (selectedAvatar) {
+    if (customAvatarUrl) {
+      updateUserAvatar(customAvatarUrl);
+    } else if (selectedAvatar) {
       updateUserAvatar(selectedAvatar);
     }
     setShowSettings(false);
@@ -34,7 +53,14 @@ export function CurrentUserSelector() {
   const handleLoadSettings = () => {
     if (currentUser) {
       setUsername(currentUser.username || '');
-      setSelectedAvatar(currentUser.avatar || '👤');
+      // Check if avatar is a URL (starts with http) or from preset avatars
+      if (currentUser.avatar?.startsWith('http')) {
+        setCustomAvatarUrl(currentUser.avatar);
+        setSelectedAvatar('');
+      } else {
+        setSelectedAvatar(currentUser.avatar || AVATARS[0]);
+        setCustomAvatarUrl('');
+      }
     }
     setShowSettings(true);
   };
@@ -54,13 +80,24 @@ export function CurrentUserSelector() {
           <div className="relative p-3">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold bg-gradient-to-br ${
-                  theme === 'light'
-                    ? 'from-green-500 via-yellow-500 to-green-600 text-white shadow-md'
-                    : 'from-green-600 via-yellow-600 to-green-700 text-white shadow-lg'
-                } transform transition-transform duration-300 group-hover:scale-110`}>
-                  {currentUser?.avatar || currentUser?.username?.charAt(0).toUpperCase() || '👤'}
-                </div>
+                {currentUser?.avatar?.startsWith('http') ? (
+                  <img 
+                    src={currentUser.avatar} 
+                    alt={currentUser.username}
+                    className="w-10 h-10 rounded-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold bg-gradient-to-br ${
+                    theme === 'light'
+                      ? 'from-green-500 via-yellow-500 to-green-600 text-white shadow-md'
+                      : 'from-green-600 via-yellow-600 to-green-700 text-white shadow-lg'
+                  } transform transition-transform duration-300 group-hover:scale-110`}>
+                    {currentUser?.username?.charAt(0).toUpperCase() || '👤'}
+                  </div>
+                )}
                 
                 {isActive && (
                   <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold animate-pulse shadow-md">
@@ -193,22 +230,60 @@ export function CurrentUserSelector() {
                     }`}>
                       {t.avatar}
                     </label>
+                    
+                    {/* Custom Avatar URL Input */}
+                    <div className="mb-4">
+                      <input
+                        type="url"
+                        value={customAvatarUrl}
+                        onChange={(e) => {
+                          setCustomAvatarUrl(e.target.value);
+                          setSelectedAvatar(''); // Clear preset selection when custom URL is entered
+                        }}
+                        placeholder="أدخل رابط الصورة..."
+                        className={`w-full px-4 py-3 rounded-2xl focus:outline-none transition-all text-lg ${
+                          theme === 'light'
+                            ? 'bg-gray-50 border-2 border-gray-200 text-gray-800 focus:border-blue-500 focus:bg-white'
+                            : 'bg-gray-800 border-2 border-gray-700 text-gray-100 focus:border-blue-400 focus:bg-gray-750'
+                        }`}
+                      />
+                      {customAvatarUrl && (
+                        <div className="mt-2 flex justify-center">
+                          <img 
+                            src={customAvatarUrl} 
+                            alt="Custom avatar preview"
+                            className="w-16 h-16 rounded-full object-cover border-2 border-blue-500"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Preset Avatar Grid */}
+                    <div className="text-sm text-gray-500 mb-2">أو اختر من الصور الجاهزة:</div>
                     <div className="grid grid-cols-5 gap-3">
                       {AVATARS.map((avatar) => (
                         <button
                           key={avatar}
-                          onClick={() => setSelectedAvatar(avatar)}
-                          className={`aspect-square rounded-2xl text-3xl flex items-center justify-center transition-all duration-200 hover:scale-110 ${
-                            selectedAvatar === avatar
-                              ? theme === 'light'
-                                ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg'
-                                : 'bg-gradient-to-br from-blue-600 to-purple-700 text-white shadow-xl'
-                              : theme === 'light'
-                                ? 'bg-gray-100 hover:bg-gray-200 border-2 border-gray-300'
-                                : 'bg-gray-800 hover:bg-gray-700 border-2 border-gray-600'
-                          }`}
+                          onClick={() => {
+                            setSelectedAvatar(avatar);
+                            setCustomAvatarUrl(''); // Clear custom URL when preset is selected
+                          }}
+                          className="aspect-square rounded-2xl overflow-hidden transition-all duration-200 hover:scale-110"
+                          style={{
+                            border: `3px solid ${selectedAvatar === avatar ? '#3b82f6' : '#d1d5db'}`
+                          }}
                         >
-                          {avatar}
+                          <img 
+                            src={avatar} 
+                            alt={`Avatar ${AVATARS.indexOf(avatar) + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
                         </button>
                       ))}
                     </div>

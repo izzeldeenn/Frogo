@@ -8,7 +8,23 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useCustomThemeClasses } from '@/hooks/useCustomThemeClasses';
 
-const AVATARS = ['😀', '😎', '🤓', '🦄', '🚀', '⭐', '🌟', '💫', '🔥', '⚡', '🎯', '🏆', '🎨', '🎭', '🎪'];
+const AVATARS = [
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar1',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar2',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar3',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar4',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar5',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar6',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar7',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar8',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar9',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar10',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar11',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar12',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar13',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar14',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar15'
+];
 
 export function SettingsButton() {
   const { theme } = useTheme();
@@ -19,6 +35,7 @@ export function SettingsButton() {
   const [showSettings, setShowSettings] = useState(false);
   const [username, setUsername] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('');
+  const [customAvatarUrl, setCustomAvatarUrl] = useState('');
 
   const currentUser = getCurrentUser();
 
@@ -26,7 +43,9 @@ export function SettingsButton() {
     if (username.trim()) {
       updateUserName(username.trim());
     }
-    if (selectedAvatar) {
+    if (customAvatarUrl) {
+      updateUserAvatar(customAvatarUrl);
+    } else if (selectedAvatar) {
       updateUserAvatar(selectedAvatar);
     }
     setShowSettings(false);
@@ -35,7 +54,14 @@ export function SettingsButton() {
   const handleLoadSettings = () => {
     if (currentUser) {
       setUsername(currentUser.username || '');
-      setSelectedAvatar(currentUser.avatar || '👤');
+      // Check if avatar is a URL (starts with http) or from preset avatars
+      if (currentUser.avatar?.startsWith('http')) {
+        setCustomAvatarUrl(currentUser.avatar);
+        setSelectedAvatar('');
+      } else {
+        setSelectedAvatar(currentUser.avatar || AVATARS[0]);
+        setCustomAvatarUrl('');
+      }
     }
     setShowSettings(true);
   };
@@ -188,22 +214,71 @@ export function SettingsButton() {
                     }`}>
                       {t.avatar}
                     </label>
+                    
+                    {/* Custom Avatar URL Input */}
+                    <div className="mb-4">
+                      <input
+                        type="url"
+                        value={customAvatarUrl}
+                        onChange={(e) => {
+                          setCustomAvatarUrl(e.target.value);
+                          setSelectedAvatar(''); // Clear preset selection when custom URL is entered
+                        }}
+                        placeholder="أدخل رابط الصورة..."
+                        className="w-full px-4 py-3 rounded-2xl focus:outline-none transition-all text-lg"
+                        style={{
+                          backgroundColor: customTheme.colors.surface,
+                          borderColor: customTheme.colors.border,
+                          color: customTheme.colors.text
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = customTheme.colors.primary;
+                          e.currentTarget.style.backgroundColor = theme === 'light' ? '#ffffff' : '#000000';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = customTheme.colors.border;
+                          e.currentTarget.style.backgroundColor = customTheme.colors.surface;
+                        }}
+                      />
+                      {customAvatarUrl && (
+                        <div className="mt-2 flex justify-center">
+                          <img 
+                            src={customAvatarUrl} 
+                            alt="Custom avatar preview"
+                            className="w-16 h-16 rounded-full object-cover border-2"
+                            style={{ borderColor: customTheme.colors.primary }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Preset Avatar Grid */}
+                    <div className="text-sm text-gray-500 mb-2">أو اختر من الصور الجاهزة:</div>
                     <div className="grid grid-cols-5 gap-3">
                       {AVATARS.map((avatar) => (
                         <button
                           key={avatar}
-                          onClick={() => setSelectedAvatar(avatar)}
-                          className="aspect-square rounded-2xl text-3xl flex items-center justify-center transition-all duration-200 hover:scale-110"
+                          onClick={() => {
+                            setSelectedAvatar(avatar);
+                            setCustomAvatarUrl(''); // Clear custom URL when preset is selected
+                          }}
+                          className="aspect-square rounded-2xl overflow-hidden transition-all duration-200 hover:scale-110"
                           style={{
-                            background: selectedAvatar === avatar
-                              ? `linear-gradient(to bottom right, ${customTheme.colors.primary}, ${customTheme.colors.secondary})`
-                              : customTheme.colors.surface,
-                            color: selectedAvatar === avatar ? '#ffffff' : customTheme.colors.text,
-                            border: `2px solid ${selectedAvatar === avatar ? customTheme.colors.primary : customTheme.colors.border}`,
+                            border: `3px solid ${selectedAvatar === avatar ? customTheme.colors.primary : customTheme.colors.border}`,
                             boxShadow: selectedAvatar === avatar ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none'
                           }}
                         >
-                          {avatar}
+                          <img 
+                            src={avatar} 
+                            alt={`Avatar ${AVATARS.indexOf(avatar) + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
                         </button>
                       ))}
                     </div>

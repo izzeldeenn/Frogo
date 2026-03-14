@@ -8,7 +8,23 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useCustomThemeClasses } from '@/hooks/useCustomThemeClasses';
 
-const AVATARS = ['😀', '😎', '🤓', '🦄', '🚀', '⭐', '🌟', '💫', '🔥', '⚡', '🎯', '🏆', '🎨', '🎭', '🎪'];
+const AVATARS = [
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar1',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar2',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar3',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar4',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar5',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar6',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar7',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar8',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar9',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar10',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar11',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar12',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar13',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar14',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar15'
+];
 
 export function UserProfile() {
   const { theme } = useTheme();
@@ -19,6 +35,7 @@ export function UserProfile() {
   const [showSettings, setShowSettings] = useState(false);
   const [username, setUsername] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('');
+  const [customAvatarUrl, setCustomAvatarUrl] = useState('');
 
   const currentUser = getCurrentUser();
 
@@ -26,7 +43,9 @@ export function UserProfile() {
     if (username.trim()) {
       updateUserName(username.trim());
     }
-    if (selectedAvatar) {
+    if (customAvatarUrl) {
+      updateUserAvatar(customAvatarUrl);
+    } else if (selectedAvatar) {
       updateUserAvatar(selectedAvatar);
     }
     setShowSettings(false);
@@ -35,7 +54,14 @@ export function UserProfile() {
   const handleLoadSettings = () => {
     if (currentUser) {
       setUsername(currentUser.username || '');
-      setSelectedAvatar(currentUser.avatar || '👤');
+      // Check if avatar is a URL (starts with http) or from preset avatars
+      if (currentUser.avatar?.startsWith('http')) {
+        setCustomAvatarUrl(currentUser.avatar);
+        setSelectedAvatar('');
+      } else {
+        setSelectedAvatar(currentUser.avatar || AVATARS[0]);
+        setCustomAvatarUrl('');
+      }
     }
     setShowSettings(true);
   };
@@ -56,15 +82,26 @@ export function UserProfile() {
           e.currentTarget.style.backgroundColor = theme === 'light' ? '#ffffff' : '#000000';
         }}
       >
-        <div 
-          className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold"
-          style={{
-            background: `linear-gradient(to bottom right, ${customTheme.colors.primary}, ${customTheme.colors.secondary})`,
-            color: '#ffffff'
-          }}
-        >
-          {currentUser?.avatar || currentUser?.username?.charAt(0).toUpperCase() || '👤'}
-        </div>
+        {currentUser?.avatar?.startsWith('http') ? (
+          <img 
+            src={currentUser.avatar} 
+            alt={currentUser.username}
+            className="w-12 h-12 rounded-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        ) : (
+          <div 
+            className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold"
+            style={{
+              background: `linear-gradient(to bottom right, ${customTheme.colors.primary}, ${customTheme.colors.secondary})`,
+              color: '#ffffff'
+            }}
+          >
+            {currentUser?.username?.charAt(0).toUpperCase() || '👤'}
+          </div>
+        )}
         
         <div className="text-right flex-1">
           <div className={`text-base font-semibold ${
@@ -175,22 +212,60 @@ export function UserProfile() {
                   }`}>
                     {t.avatar}
                   </label>
+                  
+                  {/* Custom Avatar URL Input */}
+                  <div className="mb-4">
+                    <input
+                      type="url"
+                      value={customAvatarUrl}
+                      onChange={(e) => {
+                        setCustomAvatarUrl(e.target.value);
+                        setSelectedAvatar(''); // Clear preset selection when custom URL is entered
+                      }}
+                      placeholder="أدخل رابط الصورة..."
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors text-lg ${
+                        theme === 'light'
+                          ? 'border-yellow-300 bg-white text-black focus:border-green-500'
+                          : 'border-yellow-600 bg-black text-white focus:border-green-400'
+                      }`}
+                    />
+                    {customAvatarUrl && (
+                      <div className="mt-2 flex justify-center">
+                        <img 
+                          src={customAvatarUrl} 
+                          alt="Custom avatar preview"
+                          className="w-16 h-16 rounded-full object-cover border-2 border-green-500"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Preset Avatar Grid */}
+                  <div className="text-sm text-gray-500 mb-2">أو اختر من الصور الجاهزة:</div>
                   <div className="grid grid-cols-5 gap-2">
                     {AVATARS.map((avatar) => (
                       <button
                         key={avatar}
-                        onClick={() => setSelectedAvatar(avatar)}
-                        className={`p-3 text-2xl border-2 rounded-xl transition-all duration-200 hover:scale-110 ${
-                          selectedAvatar === avatar
-                            ? theme === 'light'
-                              ? 'border-green-500 bg-green-50 shadow-lg shadow-green-200/50'
-                              : 'border-green-400 bg-green-900/30 shadow-lg shadow-green-500/30'
-                            : theme === 'light'
-                              ? 'border-yellow-300 hover:border-yellow-400'
-                              : 'border-yellow-600 hover:border-yellow-500'
-                        }`}
+                        onClick={() => {
+                          setSelectedAvatar(avatar);
+                          setCustomAvatarUrl(''); // Clear custom URL when preset is selected
+                        }}
+                        className="p-3 rounded-xl overflow-hidden transition-all duration-200 hover:scale-110"
+                        style={{
+                          border: `3px solid ${selectedAvatar === avatar ? '#10b981' : (theme === 'light' ? '#fbbf24' : '#ca8a04')}`
+                        }}
                       >
-                        {avatar}
+                        <img 
+                          src={avatar} 
+                          alt={`Avatar ${AVATARS.indexOf(avatar) + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
                       </button>
                     ))}
                   </div>
