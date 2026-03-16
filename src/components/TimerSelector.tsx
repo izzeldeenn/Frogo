@@ -7,8 +7,9 @@ import { Timer } from './Timer';
 import { PomodoroTimer } from './PomodoroTimer';
 import { CountdownTimer } from './CountdownTimer';
 import { YouTubeTimer } from './YouTubeTimer';
+import { UserActivityDashboard } from './UserActivityDashboard';
 
-type TimerType = 'stopwatch' | 'pomodoro' | 'countdown' | 'youtube';
+type TimerType = 'stopwatch' | 'pomodoro' | 'countdown' | 'youtube' | 'dashboard';
 
 export function TimerSelector() {
   const { theme } = useTheme();
@@ -25,6 +26,8 @@ export function TimerSelector() {
         return <CountdownTimer />;
       case 'youtube':
         return <YouTubeTimer />;
+      case 'dashboard':
+        return <UserActivityDashboard />;
       default:
         return <Timer />;
     }
@@ -34,7 +37,8 @@ export function TimerSelector() {
     { type: 'stopwatch' as TimerType, label: t.stopwatch, icon: '⏱️' },
     { type: 'pomodoro' as TimerType, label: t.pomodoro, icon: '🍅' },
     { type: 'countdown' as TimerType, label: t.countdown, icon: '⏰' },
-    { type: 'youtube' as TimerType, label: t.youtube, icon: '▶️' }
+    { type: 'youtube' as TimerType, label: t.youtube, icon: '▶️' },
+    { type: 'dashboard' as TimerType, label: t.rank === 'ترتيب' ? 'لوحة التحكم' : 'Dashboard', icon: '📊' }
   ];
 
   return (

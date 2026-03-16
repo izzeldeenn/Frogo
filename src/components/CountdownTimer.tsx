@@ -3,18 +3,103 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useUser } from '@/contexts/UserContext';
+import { useTimerIndicator } from '@/contexts/TimerIndicatorContext';
+import { useFullscreen } from '@/contexts/FullscreenContext';
+import { dailyActivityDB } from '@/lib/dailyActivity';
 
 export function CountdownTimer() {
   const { theme } = useTheme();
-  const { updateUserStudyTime, setTimerActive } = useUser();
-  const [hours, setHours] = useState(0);
-  const [minutes, setMinutes] = useState(5);
-  const [seconds, setSeconds] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isSet, setIsSet] = useState(false);
+  const { getCurrentUser, updateUserStudyTime, setTimerActive } = useUser();
+  const { setTimerActive: setTimerActiveIndicator } = useTimerIndicator();
+  const { showFullscreenPrompt, setShowFullscreenPrompt, requestFullscreen } = useFullscreen();
+  const [hours, setHours] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('countdownTimer_inputs');
+      if (saved) {
+        const inputs = JSON.parse(saved);
+        return inputs.hours || 0;
+      }
+    }
+    return 0;
+  });
+  const [minutes, setMinutes] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('countdownTimer_inputs');
+      if (saved) {
+        const inputs = JSON.parse(saved);
+        return inputs.minutes || 5;
+      }
+    }
+    return 5;
+  });
+  const [seconds, setSeconds] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('countdownTimer_inputs');
+      if (saved) {
+        const inputs = JSON.parse(saved);
+        return inputs.seconds || 0;
+      }
+    }
+    return 0;
+  });
+  const [timeLeft, setTimeLeft] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('countdownTimer_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        return state.timeLeft || 0;
+      }
+    }
+    return 0;
+  });
+  const [isRunning, setIsRunning] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('countdownTimer_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        return state.isRunning || false;
+      }
+    }
+    return false;
+  });
+  const [isSet, setIsSet] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('countdownTimer_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        return state.isSet || false;
+      }
+    }
+    return false;
+  });
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const studyTimeRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const state = {
+        timeLeft,
+        isRunning,
+        isSet
+      };
+      const inputs = {
+        hours,
+        minutes,
+        seconds
+      };
+      localStorage.setItem('countdownTimer_state', JSON.stringify(state));
+      localStorage.setItem('countdownTimer_inputs', JSON.stringify(inputs));
+    }
+  }, [timeLeft, isRunning, isSet, hours, minutes, seconds]);
+
+  // Clear saved state
+  const clearSavedState = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('countdownTimer_state');
+      localStorage.removeItem('countdownTimer_inputs');
+    }
+  };
 
   // Check fullscreen status and stop timer if not in fullscreen
   useEffect(() => {
@@ -38,23 +123,30 @@ export function CountdownTimer() {
   }, [isRunning]);
 
   useEffect(() => {
+    const currentUser = getCurrentUser();
     if (isRunning && timeLeft > 0) {
       setTimerActive(true);
+      setTimerActiveIndicator(true);
       intervalRef.current = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
+        setTimeLeft((prev: number) => prev - 1);
       }, 1000);
       
       // Update device study time every second
       studyTimeRef.current = setInterval(() => {
         updateUserStudyTime(1); // Add 1 second of study time
+        if (currentUser?.accountId) {
+          dailyActivityDB.updateStudyTimeRealtime(currentUser.accountId, 1); // Update daily activity
+        }
       }, 1000);
     } else if (timeLeft === 0 && isRunning) {
       setIsRunning(false);
       setTimerActive(false);
+      setTimerActiveIndicator(false);
       // Play notification or alert
       alert('الوقت انتهى!');
     } else {
       setTimerActive(false);
+      setTimerActiveIndicator(false);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
@@ -65,6 +157,7 @@ export function CountdownTimer() {
 
     return () => {
       setTimerActive(false);
+      setTimerActiveIndicator(false);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
@@ -72,7 +165,7 @@ export function CountdownTimer() {
         clearInterval(studyTimeRef.current);
       }
     };
-  }, [isRunning, timeLeft, updateUserStudyTime, setTimerActive]);
+  }, [isRunning, timeLeft, updateUserStudyTime, setTimerActive, setTimerActiveIndicator, getCurrentUser]);
 
   const formatTime = (totalSeconds: number) => {
     const h = Math.floor(totalSeconds / 3600);
@@ -90,17 +183,50 @@ export function CountdownTimer() {
     }
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (isSet && timeLeft > 0) {
-      setIsRunning(true);
+      // Check if fullscreen is active, if not show prompt
+      if (!document.fullscreenElement) {
+        setShowFullscreenPrompt(true);
+        return;
+      }
+      
+      // Get current user and validate
+      const currentUser = getCurrentUser();
+      if (!currentUser?.accountId) {
+        console.error('❌ No current user found');
+        return;
+      }
+      
+      console.log('🚀 Starting Countdown timer for user:', currentUser.accountId, currentUser.username);
+      
+      // Start a new study session
+      const success = await dailyActivityDB.startStudySession(currentUser.accountId);
+      if (success) {
+        setIsRunning(true);
+        console.log('✅ Countdown timer started successfully');
+      } else {
+        console.error('❌ Failed to start study session');
+      }
     }
   };
 
-  const handleStop = () => setIsRunning(false);
-  const handleReset = () => {
+  const handleStop = async () => {
+    if (isRunning) {
+      const currentUser = getCurrentUser();
+      if (currentUser?.accountId) {
+        await dailyActivityDB.endStudySession(currentUser.accountId);
+      }
+    }
     setIsRunning(false);
+  };
+  const handleReset = async () => {
+    if (isRunning) {
+      await handleStop();
+    }
     setIsSet(false);
     setTimeLeft(0);
+    clearSavedState();
   };
 
   return (

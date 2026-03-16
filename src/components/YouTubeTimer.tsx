@@ -3,17 +3,75 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useUser } from '@/contexts/UserContext';
+import { useTimerIndicator } from '@/contexts/TimerIndicatorContext';
+import { useFullscreen } from '@/contexts/FullscreenContext';
+import { dailyActivityDB } from '@/lib/dailyActivity';
 
 export function YouTubeTimer() {
   const { theme } = useTheme();
   const { getCurrentUser, updateUserStudyTime, setTimerActive } = useUser();
-  const [time, setTime] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [videoUrl, setVideoUrl] = useState('');
-  const [showVideo, setShowVideo] = useState(false);
+  const { setTimerActive: setTimerActiveIndicator } = useTimerIndicator();
+  const { showFullscreenPrompt, setShowFullscreenPrompt, requestFullscreen } = useFullscreen();
+  const [time, setTime] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('youtubeTimer_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        return state.time || 0;
+      }
+    }
+    return 0;
+  });
+  const [isRunning, setIsRunning] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('youtubeTimer_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        return state.isRunning || false;
+      }
+    }
+    return false;
+  });
+  const [videoUrl, setVideoUrl] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('youtubeTimer_videoUrl') || '';
+    }
+    return '';
+  });
+  const [showVideo, setShowVideo] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('youtubeTimer_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        return state.showVideo || false;
+      }
+    }
+    return false;
+  });
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const studyTimeRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const state = {
+        time,
+        isRunning,
+        showVideo
+      };
+      localStorage.setItem('youtubeTimer_state', JSON.stringify(state));
+      localStorage.setItem('youtubeTimer_videoUrl', videoUrl);
+    }
+  }, [time, isRunning, showVideo, videoUrl]);
+
+  // Clear saved state
+  const clearSavedState = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('youtubeTimer_state');
+      localStorage.removeItem('youtubeTimer_videoUrl');
+    }
+  };
 
   // Extract video ID from YouTube URL
   const getVideoId = (url: string) => {
@@ -49,18 +107,24 @@ export function YouTubeTimer() {
   }, [isRunning]);
 
   useEffect(() => {
+    const currentUser = getCurrentUser();
     if (isRunning) {
       setTimerActive(true);
+      setTimerActiveIndicator(true);
       intervalRef.current = setInterval(() => {
-        setTime(prevTime => prevTime + 10);
+        setTime((prevTime: number) => prevTime + 10);
       }, 10);
       
       // Update device study time every second
       studyTimeRef.current = setInterval(() => {
         updateUserStudyTime(1); // Add 1 second of study time
+        if (currentUser?.accountId) {
+          dailyActivityDB.updateStudyTimeRealtime(currentUser.accountId, 1); // Update daily activity
+        }
       }, 1000);
     } else {
       setTimerActive(false);
+      setTimerActiveIndicator(false);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
@@ -71,6 +135,7 @@ export function YouTubeTimer() {
 
     return () => {
       setTimerActive(false);
+      setTimerActiveIndicator(false);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
@@ -78,7 +143,7 @@ export function YouTubeTimer() {
         clearInterval(studyTimeRef.current);
       }
     };
-  }, [isRunning, updateUserStudyTime, setTimerActive]);
+  }, [isRunning, updateUserStudyTime, setTimerActive, setTimerActiveIndicator, getCurrentUser]);
 
   const formatTime = (milliseconds: number) => {
     const totalSeconds = Math.floor(milliseconds / 1000);
@@ -91,21 +156,52 @@ export function YouTubeTimer() {
       .padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (videoUrl && getVideoId(videoUrl)) {
-      setIsRunning(true);
-      setShowVideo(true);
+      // Check if fullscreen is active, if not show prompt
+      if (!document.fullscreenElement) {
+        setShowFullscreenPrompt(true);
+        return;
+      }
+      
+      // Get current user and validate
+      const currentUser = getCurrentUser();
+      if (!currentUser?.accountId) {
+        console.error('❌ No current user found');
+        return;
+      }
+      
+      console.log('🚀 Starting YouTube timer for user:', currentUser.accountId, currentUser.username);
+      
+      // Start a new study session
+      const success = await dailyActivityDB.startStudySession(currentUser.accountId);
+      if (success) {
+        setIsRunning(true);
+        setShowVideo(true);
+        console.log('✅ YouTube timer started successfully');
+      } else {
+        console.error('❌ Failed to start study session');
+      }
     }
   };
 
-  const handleStop = () => {
+  const handleStop = async () => {
+    if (isRunning) {
+      const currentUser = getCurrentUser();
+      if (currentUser?.accountId) {
+        await dailyActivityDB.endStudySession(currentUser.accountId);
+      }
+    }
     setIsRunning(false);
   };
 
-  const handleReset = () => {
-    setIsRunning(false);
+  const handleReset = async () => {
+    if (isRunning) {
+      await handleStop();
+    }
     setTime(0);
     setShowVideo(false);
+    clearSavedState();
   };
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {

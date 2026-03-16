@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useGamification } from '@/contexts/GamificationContext';
 import { useUser } from '@/contexts/UserContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { dailyActivityDB } from '@/lib/dailyActivity';
+import { ActivityContribution } from '@/lib/dailyActivity';
 import { useCustomThemeClasses } from '@/hooks/useCustomThemeClasses';
 
 const AVATARS = [
@@ -36,8 +38,26 @@ export function SettingsButton() {
   const [username, setUsername] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('');
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
+  const [activityData, setActivityData] = useState<{ contributions: ActivityContribution[] }>({ contributions: [] });
 
   const currentUser = getCurrentUser();
+
+  // Fetch user activity data
+  useEffect(() => {
+    const fetchActivityData = async () => {
+      if (currentUser?.id) {
+        try {
+          const contributions = await dailyActivityDB.getUserActivityContributions(currentUser.id);
+          setActivityData({ contributions });
+        } catch (error) {
+          console.error('Failed to fetch activity data:', error);
+          setActivityData({ contributions: [] });
+        }
+      }
+    };
+
+    fetchActivityData();
+  }, [currentUser?.id]);
 
   const handleSaveSettings = () => {
     if (username.trim()) {
@@ -285,7 +305,6 @@ export function SettingsButton() {
                   </div>
                 </div>
               </div>
-
               <div 
                 className="mt-8 p-6 rounded-3xl"
                 style={{

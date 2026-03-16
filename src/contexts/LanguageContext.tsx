@@ -14,6 +14,8 @@ const translations = {
     youtube: 'YouTube Timer',
     // Rankings
     rankings: 'Rankings',
+    dailyRankings: 'Daily Rankings',
+    noDailyActivity: 'No daily activity recorded yet today',
     noDevices: 'No devices yet',
     active: 'Active',
     today: 'Today',
@@ -51,6 +53,8 @@ const translations = {
     youtube: 'مؤقت يوتيوب',
     // Rankings
     rankings: 'الترتيب',
+    dailyRankings: 'الترتيب اليومي',
+    noDailyActivity: 'لا يوجد نشاط يومي مسجل اليوم',
     noDevices: 'لا يوجد أجهزة بعد',
     active: 'نشط',
     today: 'اليوم',

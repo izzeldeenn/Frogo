@@ -1,17 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageLayout } from '@/components/LanguageLayout';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { CustomThemeProvider } from '@/contexts/CustomThemeContext';
 import { useCustomThemeClasses } from '@/hooks/useCustomThemeClasses';
 
 export default function LandingPage() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Hide loader after page loads
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <CustomThemeProvider>
+      {isLoading && <LoadingSpinner onComplete={() => setIsLoading(false)} />}
       <LandingPageContent />
     </CustomThemeProvider>
   );

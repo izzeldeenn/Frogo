@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useGamification } from '@/contexts/GamificationContext';
 import { useUser } from '@/contexts/UserContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { dailyActivityDB } from '@/lib/dailyActivity';
 
 const AVATARS = [
   'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar1',
@@ -34,9 +35,42 @@ export function CurrentUserSelector() {
   const [username, setUsername] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('');
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
+  const [todayStudyTime, setTodayStudyTime] = useState(0);
 
   const currentUser = getCurrentUser();
   const isActive = isTimerActive();
+
+  // Load today's study time
+  useEffect(() => {
+    const loadTodayStudyTime = async () => {
+      if (currentUser?.accountId) {
+        try {
+          console.log('🔄 Loading today study time for user:', currentUser.accountId);
+          const today = new Date().toISOString().split('T')[0];
+          
+          // Use same method as UserRankings - get from dailyRankings
+          const rankings = await dailyActivityDB.getTodayRankings();
+          console.log('📊 Today rankings from DB:', rankings);
+          
+          const userActivity = rankings.find(r => r.account_id === currentUser.accountId);
+          console.log('🎯 Found user activity:', userActivity);
+          
+          const time = userActivity?.study_minutes || 0;
+          console.log('⏰ Setting today study time to:', time);
+          setTodayStudyTime(time);
+        } catch (error) {
+          console.error('❌ Error loading today study time:', error);
+        }
+      }
+    };
+
+    loadTodayStudyTime();
+    
+    // Update every 30 seconds to keep it fresh
+    const interval = setInterval(loadTodayStudyTime, 30000);
+    
+    return () => clearInterval(interval);
+  }, [currentUser?.accountId]);
 
   const handleSaveSettings = () => {
     if (username.trim()) {
@@ -120,7 +154,7 @@ export function CurrentUserSelector() {
                   : 'bg-gradient-to-r from-yellow-900/30 to-green-900/30 text-green-300 border border-yellow-700/50'
               }`}>
                 <span className="w-1 h-1 bg-green-500 rounded-full mr-1 animate-pulse"></span>
-                {Math.floor((currentUser?.studyTime || 0) / 60)}m ⏱️
+                {todayStudyTime}m ⏱️
               </div>
             </div>
           </div>

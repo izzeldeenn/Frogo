@@ -16,6 +16,8 @@ import { useCustomThemeClasses } from '@/hooks/useCustomThemeClasses';
 import { useUser } from '@/contexts/UserContext';
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { TimerIndicatorProvider } from '@/contexts/TimerIndicatorContext';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 // Helper function to get background properties
 const getBackgroundStyles = (backgroundId: string) => {
@@ -70,6 +72,7 @@ function HomeContent() {
   const customTheme = useCustomThemeClasses();
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [selectedBackground, setSelectedBackground] = useState('default');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Listen for fullscreen changes
@@ -112,7 +115,8 @@ function HomeContent() {
       theme === 'light' ? 'bg-white' : 'bg-black'
     }`}>
       <FullscreenPrompt />
-
+      {isLoading && <LoadingSpinner onComplete={() => setIsLoading(false)} />}
+      
       {/* Desktop Layout - Side by side */}
       <div className="hidden md:flex w-full h-full">
         {/* Left section - 1/4 width */}
@@ -253,10 +257,12 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <CustomThemeProvider>
-      <FullscreenProvider>
-        <HomeContent />
-      </FullscreenProvider>
-    </CustomThemeProvider>
+    <TimerIndicatorProvider>
+      <CustomThemeProvider>
+        <FullscreenProvider>
+          <HomeContent />
+        </FullscreenProvider>
+      </CustomThemeProvider>
+    </TimerIndicatorProvider>
   );
 }

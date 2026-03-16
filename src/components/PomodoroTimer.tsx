@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useUser } from '@/contexts/UserContext';
+import { useTimerIndicator } from '@/contexts/TimerIndicatorContext';
+import { useFullscreen } from '@/contexts/FullscreenContext';
+import { dailyActivityDB } from '@/lib/dailyActivity';
 
 interface PomodoroSettings {
   workMinutes: number;
@@ -14,19 +17,88 @@ interface PomodoroSettings {
 export function PomodoroTimer() {
   const { theme } = useTheme();
   const { getCurrentUser, updateUserStudyTime, setTimerActive } = useUser();
-  const [settings, setSettings] = useState<PomodoroSettings>({
-    workMinutes: 25,
-    shortBreakMinutes: 5,
-    longBreakMinutes: 15,
-    longBreakInterval: 4
+  const { setTimerActive: setTimerActiveIndicator } = useTimerIndicator();
+  const { showFullscreenPrompt, setShowFullscreenPrompt, requestFullscreen } = useFullscreen();
+  const [settings, setSettings] = useState<PomodoroSettings>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pomodoroTimer_settings');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    }
+    return {
+      workMinutes: 25,
+      shortBreakMinutes: 5,
+      longBreakMinutes: 15,
+      longBreakInterval: 4
+    };
   });
 
   const [showSettings, setShowSettings] = useState(false);
-  const [currentSession, setCurrentSession] = useState<'work' | 'shortBreak' | 'longBreak'>('work');
-  const [completedSessions, setCompletedSessions] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(settings.workMinutes * 60);
-  const [isRunning, setIsRunning] = useState(false);
+  const [currentSession, setCurrentSession] = useState<'work' | 'shortBreak' | 'longBreak'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pomodoroTimer_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        return state.currentSession || 'work';
+      }
+    }
+    return 'work';
+  });
+  const [completedSessions, setCompletedSessions] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pomodoroTimer_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        return state.completedSessions || 0;
+      }
+    }
+    return 0;
+  });
+  const [timeLeft, setTimeLeft] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pomodoroTimer_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        return state.timeLeft || settings.workMinutes * 60;
+      }
+    }
+    return settings.workMinutes * 60;
+  });
+  const [isRunning, setIsRunning] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pomodoroTimer_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        return state.isRunning || false;
+      }
+    }
+    return false;
+  });
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const studyTimeRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const state = {
+        currentSession,
+        completedSessions,
+        timeLeft,
+        isRunning
+      };
+      localStorage.setItem('pomodoroTimer_state', JSON.stringify(state));
+      localStorage.setItem('pomodoroTimer_settings', JSON.stringify(settings));
+    }
+  }, [currentSession, completedSessions, timeLeft, isRunning, settings]);
+
+  // Clear saved state
+  const clearSavedState = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('pomodoroTimer_state');
+      localStorage.removeItem('pomodoroTimer_settings');
+    }
+  };
 
   // Check fullscreen status and stop timer if not in fullscreen
   useEffect(() => {
@@ -50,32 +122,51 @@ export function PomodoroTimer() {
   }, [isRunning]);
 
   useEffect(() => {
+    const currentUser = getCurrentUser();
     if (isRunning && timeLeft > 0) {
       setTimerActive(true);
+      setTimerActiveIndicator(true);
       intervalRef.current = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
-        
-        // Update user study time every second during work session
+        setTimeLeft((prev: number) => prev - 1);
+      }, 1000);
+      
+      // Update device study time every second for work sessions
+      studyTimeRef.current = setInterval(() => {
         if (currentSession === 'work') {
           updateUserStudyTime(1); // Add 1 second of study time
+          if (currentUser?.accountId) {
+            dailyActivityDB.updateStudyTimeRealtime(currentUser.accountId, 1); // Update daily activity
+          }
         }
       }, 1000);
-    } else if (timeLeft === 0) {
-      handleSessionComplete();
+    } else if (timeLeft === 0 && isRunning) {
+      setIsRunning(false);
+      setTimerActive(false);
+      setTimerActiveIndicator(false);
+      // Play notification or alert
+      alert('الجلسة انتهت!');
     } else {
       setTimerActive(false);
+      setTimerActiveIndicator(false);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+      }
+      if (studyTimeRef.current) {
+        clearInterval(studyTimeRef.current);
       }
     }
 
     return () => {
       setTimerActive(false);
+      setTimerActiveIndicator(false);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+      if (studyTimeRef.current) {
+        clearInterval(studyTimeRef.current);
+      }
     };
-  }, [isRunning, timeLeft, currentSession, updateUserStudyTime, setTimerActive]);
+  }, [isRunning, timeLeft, currentSession, updateUserStudyTime, setTimerActive, setTimerActiveIndicator, getCurrentUser]);
 
   const handleSessionComplete = () => {
     setIsRunning(false);
@@ -103,16 +194,56 @@ export function PomodoroTimer() {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const handleStart = () => setIsRunning(true);
-  const handleStop = () => setIsRunning(false);
-  const handleReset = () => {
+  const handleStart = async () => {
+    // Check if fullscreen is active, if not show prompt
+    if (!document.fullscreenElement) {
+      setShowFullscreenPrompt(true);
+      return;
+    }
+    
+    // Get current user and validate
+    const currentUser = getCurrentUser();
+    if (!currentUser?.accountId) {
+      console.error('❌ No current user found');
+      return;
+    }
+    
+    console.log('🚀 Starting Pomodoro timer for user:', currentUser.accountId, currentUser.username);
+    
+    // Start a new study session
+    const success = await dailyActivityDB.startStudySession(currentUser.accountId);
+    if (success) {
+      setIsRunning(true);
+      console.log('✅ Pomodoro timer started successfully');
+    } else {
+      console.error('❌ Failed to start study session');
+    }
+  };
+  
+  const handleStop = async () => {
+    if (isRunning) {
+      const currentUser = getCurrentUser();
+      if (currentUser?.accountId) {
+        await dailyActivityDB.endStudySession(currentUser.accountId);
+      }
+    }
     setIsRunning(false);
+  };
+  
+  const handleReset = async () => {
+    if (isRunning) {
+      await handleStop();
+    }
     setTimeLeft(currentSession === 'work' ? settings.workMinutes * 60 : 
                currentSession === 'shortBreak' ? settings.shortBreakMinutes * 60 : 
                settings.longBreakMinutes * 60);
+    clearSavedState();
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    if (isRunning) {
+      await handleStop();
+    }
     setIsRunning(false);
     if (currentSession === 'work') {
       const newCompletedSessions = completedSessions + 1;

@@ -5,6 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUser } from '@/contexts/UserContext';
 import { useCustomThemeClasses } from '@/hooks/useCustomThemeClasses';
+import { dailyActivityDB, DailyActivityFrontend } from '@/lib/dailyActivity';
 
 interface UserAccount {
   accountId: string;
@@ -14,7 +15,9 @@ interface UserAccount {
   avatar?: string;
   score: number;
   rank: number;
+  dailyRank?: number;
   studyTime: number;
+  dailyStudyTime?: number;
   createdAt: string;
   lastActive: string;
 }
@@ -26,24 +29,108 @@ export function UserRankings() {
   const customTheme = useCustomThemeClasses();
   const [displayUsers, setDisplayUsers] = useState<UserAccount[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [dailyRankings, setDailyRankings] = useState<DailyActivityFrontend[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get all users including virtual ones
+    loadDailyRankings();
+  }, []);
+
+  useEffect(() => {
+    // Get all users including virtual ones and merge with daily rankings
     const allUsers = getAllDeviceUsers();
-    setDisplayUsers(allUsers);
-  }, [users]);
+    const currentUser = getCurrentUser();
+    console.log('👥 All users:', allUsers.map(u => ({ id: u.accountId, name: u.username })));
+    console.log('👤 Current user:', currentUser ? { id: currentUser.accountId, name: currentUser.username } : 'No current user');
+    console.log('🏆 Daily rankings available:', dailyRankings.map(dr => ({ 
+        id: dr.id, 
+        accountId: dr.accountId, 
+        rank: dr.dailyRank, 
+        minutes: dr.studyMinutes,
+        username: 'Unknown'
+      })));
+    
+    const usersWithDailyRank = allUsers.map(user => {
+      const dailyActivity = dailyRankings.find(dr => dr.accountId === user.accountId);
+      const result = {
+        ...user,
+        dailyRank: dailyActivity?.dailyRank || 999,
+        dailyStudyTime: dailyActivity?.studyMinutes || 0
+      };
+      
+      // Log for all users to debug the mapping issue
+      console.log('🎯 User mapping:', {
+        accountId: user.accountId,
+        username: user.username,
+        foundActivity: !!dailyActivity,
+        dailyRank: result.dailyRank,
+        dailyStudyTime: result.dailyStudyTime,
+        dailyActivityData: dailyActivity
+      });
+      
+      return result;
+    });
+    
+    // Sort by daily rank
+    const sortedUsers = usersWithDailyRank.sort((a, b) => a.dailyRank - b.dailyRank);
+    console.log('📊 Final sorted users (top 10):', sortedUsers.slice(0, 10).map(u => ({ 
+      rank: u.dailyRank, 
+      name: u.username, 
+      minutes: u.dailyStudyTime 
+    })));
+    setDisplayUsers(sortedUsers);
+  }, [users, dailyRankings]);
+
+  const loadDailyRankings = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Loading daily rankings...');
+      
+      // Force update rankings before loading
+      await dailyActivityDB.updateTodayRankings();
+      
+      const rankings = await dailyActivityDB.getTodayRankings();
+      console.log('📊 Raw rankings from DB:', rankings);
+      
+      const formattedRankings = rankings.map(activity => ({
+        id: activity.id,
+        accountId: activity.account_id,
+        date: activity.date,
+        studyMinutes: activity.study_minutes,
+        studySeconds: activity.study_seconds || 0,
+        lastUpdated: activity.last_updated || activity.updated_at,
+        startTime: activity.start_time,
+        endTime: activity.end_time,
+        pointsEarned: activity.points_earned,
+        dailyRank: activity.daily_rank,
+        sessionsCount: activity.sessions_count,
+        focusScore: activity.focus_score,
+        createdAt: activity.created_at,
+        updatedAt: activity.updated_at
+      }));
+      console.log('📊 Formatted rankings:', formattedRankings);
+      
+      // Debug: Check if we have any rankings with valid ranks
+      const validRanks = formattedRankings.filter(r => r.dailyRank < 999);
+      console.log('📊 Valid rankings (rank < 999):', validRanks);
+      
+      setDailyRankings(formattedRankings);
+    } catch (error) {
+      console.error('❌ Error loading daily rankings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Update rankings every second for live changes
+    // Update rankings every 30 seconds for live changes
     const interval = setInterval(() => {
-      // Get all users including virtual ones
-      const allUsers = getAllDeviceUsers();
-      setDisplayUsers(allUsers);
+      loadDailyRankings();
       setCurrentTime(new Date());
-    }, 1000);
+    }, 30000);
 
     return () => clearInterval(interval);
-  }, [users]);
+  }, []);
 
   const formatStudyTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -53,18 +140,8 @@ export function UserRankings() {
   };
 
   const getTodayStudyTime = (user: UserAccount) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const lastActiveDate = new Date(user.lastActive);
-    
-    // If last active was today, return the actual study time for today
-    if (lastActiveDate >= today) {
-      // For simplicity, we'll use a portion of total study time based on recent activity
-      // In a real app, you'd track daily study time separately
-      const todayPortion = Math.min(user.studyTime, 4 * 60 * 60); // Max 4 hours today display
-      return todayPortion; // Return in seconds
-    }
-    return 0;
+    // Convert daily study time from minutes to seconds for formatting
+    return (user.dailyStudyTime || 0) * 60;
   };
 
   const getCoinsFromStudyTime = (studySeconds: number) => {
@@ -98,15 +175,21 @@ export function UserRankings() {
 
   return (
     <div className="flex-1">
-      <h2 className={`text-2xl font-bold mb-6 text-center ${
-        theme === 'light' ? 'text-black' : 'text-white'
-      }`}>{t.rankings}</h2>
+      <div className="flex justify-center items-center mb-6">
+        <h2 className={`text-2xl font-bold text-center ${
+          theme === 'light' ? 'text-black' : 'text-white'
+        }`}>{t.dailyRankings}</h2>
+      </div>
       <div className="h-[calc(100vh-180px)] overflow-y-auto space-y-2">
-        {displayUsers.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        ) : displayUsers.length === 0 ? (
           <p className={`text-center py-12 ${
             theme === 'light' ? 'text-gray-500' : 'text-gray-400'
           }`}>
-            {t.noDevices}
+            {t.noDailyActivity}
           </p>
         ) : (
           displayUsers.map((user) => {
@@ -125,14 +208,14 @@ export function UserRankings() {
                 style={{
                   backgroundColor: isCurrent
                     ? 'rgba(59, 130, 246, 0.4)'
-                    : user.rank === 1 
+                    : (user.dailyRank || 0) === 1 
                     ? `${customTheme.colors.secondary}20`
-                    : user.rank % 2 === 0 
+                    : (user.dailyRank || 0) % 2 === 0 
                     ? `${customTheme.colors.primary}10`
                     : `${customTheme.colors.secondary}10`,
                   boxShadow: isCurrent 
                     ? '0 10px 15px -3px rgba(59, 130, 246, 0.5), 0 4px 6px -2px rgba(59, 130, 246, 0.3)' 
-                    : user.rank <= 3 
+                    : (user.dailyRank || 0) <= 3 
                     ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' 
                     : 'none'
                 }}
@@ -142,14 +225,14 @@ export function UserRankings() {
                     <span 
                       className="text-sm font-bold"
                       style={{
-                        color: user.rank === 1 
+                        color: (user.dailyRank || 0) === 1 
                           ? customTheme.colors.secondary
-                          : user.rank % 2 === 0 
+                          : (user.dailyRank || 0) % 2 === 0 
                           ? customTheme.colors.primary 
                           : customTheme.colors.secondary
                       }}
                     >
-                      {user.rank}
+                      #{user.dailyRank || 999}
                     </span>
                     
                     <div className="text-xl">
@@ -180,7 +263,7 @@ export function UserRankings() {
                       : 'bg-gradient-to-r from-yellow-900/30 to-green-900/30 text-green-300 border border-yellow-700/50'
                   }`}>
                     <span className="w-1 h-1 bg-green-500 rounded-full mr-1 animate-pulse"></span>
-                    {Math.floor(user.studyTime / 60)}m ⏱️
+                    {Math.floor(getTodayStudyTime(user) / 60)}m
                   </div>
                 </div>
               </div>
