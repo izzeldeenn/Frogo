@@ -208,13 +208,13 @@ export function CurrentUserSelector() {
                     <label className={`block mb-3 text-lg font-semibold ${
                       theme === 'light' ? 'text-gray-700' : 'text-gray-300'
                     }`}>
-                      {t.deviceName}
+                      {t.username}
                     </label>
                     <input
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder={t.enterDeviceName}
+                      placeholder={t.enterUsername}
                       className={`w-full px-4 py-3 rounded-2xl focus:outline-none transition-all text-lg ${
                         theme === 'light'
                           ? 'bg-yellow-50 border-2 border-yellow-200 text-gray-800 focus:border-green-500 focus:bg-white'

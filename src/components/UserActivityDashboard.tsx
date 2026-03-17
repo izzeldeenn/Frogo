@@ -231,7 +231,7 @@ export function UserActivityDashboard({ accountId }: UserActivityDashboardProps)
   const stats = calculateStats();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-h-[80vh] overflow-y-auto pr-2">
       {/* Header */}
       <div className={`flex justify-between items-center ${
         theme === 'light' ? 'text-gray-900' : 'text-gray-100'

@@ -6,41 +6,52 @@ import { useGamification } from '@/contexts/GamificationContext';
 import { useUser } from '@/contexts/UserContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { AuthModal } from '@/components/AuthModal';
+import { AccountSwitcher } from '@/components/AccountSwitcher';
 import { dailyActivityDB } from '@/lib/dailyActivity';
 import { ActivityContribution } from '@/lib/dailyActivity';
 import { useCustomThemeClasses } from '@/hooks/useCustomThemeClasses';
 
-const AVATARS = [
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar1',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar2',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar3',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar4',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar5',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar6',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar7',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar8',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar9',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar10',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar11',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar12',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar13',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar14',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar15'
-];
+// Generate 250 avatars dynamically
+const AVATARS = Array.from({ length: 250 }, (_, i) => 
+  `https://api.dicebear.com/7.x/avataaars/svg?seed=avatar${i + 1}`
+);
 
 export function SettingsButton() {
   const { theme } = useTheme();
   const { coins, level, experience } = useGamification();
-  const { getCurrentUser, updateUserName, updateUserAvatar } = useUser();
+  const { getCurrentUser, updateUserName, updateUserAvatar, isLoggedIn } = useUser();
   const { language, setLanguage, t } = useLanguage();
   const customTheme = useCustomThemeClasses();
   const [showSettings, setShowSettings] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
   const [username, setUsername] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('');
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
   const [activityData, setActivityData] = useState<{ contributions: ActivityContribution[] }>({ contributions: [] });
+  const [avatarPage, setAvatarPage] = useState(1);
+  const [avatarSearch, setAvatarSearch] = useState('');
+  const avatarsPerPage = 20;
 
   const currentUser = getCurrentUser();
+
+  // Filter and paginate avatars
+  const filteredAvatars = avatarSearch 
+    ? AVATARS.filter((_, index) => 
+        (index + 1).toString().includes(avatarSearch)
+      )
+    : AVATARS;
+
+  const totalPages = Math.ceil(filteredAvatars.length / avatarsPerPage);
+  const startIndex = (avatarPage - 1) * avatarsPerPage;
+  const endIndex = startIndex + avatarsPerPage;
+  const currentAvatars = filteredAvatars.slice(startIndex, endIndex);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setAvatarPage(1);
+  }, [avatarSearch]);
 
   // Fetch user activity data
   useEffect(() => {
@@ -155,13 +166,13 @@ export function SettingsButton() {
                     <label className={`block mb-3 text-lg font-semibold ${
                       theme === 'light' ? 'text-gray-700' : 'text-gray-300'
                     }`}>
-                      {t.deviceName}
+                      {t.username}
                     </label>
                     <input
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder={t.enterDeviceName}
+                      placeholder={t.enterUsername}
                       className="w-full px-4 py-3 rounded-2xl focus:outline-none transition-all text-lg"
                       style={{
                         backgroundColor: customTheme.colors.surface,
@@ -225,6 +236,114 @@ export function SettingsButton() {
                       <option value="ar">العربية</option>
                     </select>
                   </div>
+
+                  {/* Authentication Section */}
+                  <div>
+                    <label className={`block mb-3 text-lg font-semibold ${
+                      theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+                    }`}>
+                      الحساب
+                    </label>
+                    <div className="space-y-3">
+                      {isLoggedIn ? (
+                        <div className="p-4 rounded-2xl"
+                             style={{ backgroundColor: customTheme.colors.surface + '30' }}>
+                          <div className={`text-sm font-medium mb-2 ${
+                            theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                          }`}>
+                            مسجل الدخول كـ:
+                          </div>
+                          <div className={`font-semibold ${
+                            theme === 'light' ? 'text-gray-800' : 'text-gray-100'
+                          }`}>
+                            {currentUser?.username || 'مستخدم'}
+                          </div>
+                          <div className={`text-sm ${
+                            theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                          }`}>
+                            {currentUser?.email || 'user@example.com'}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-4 rounded-2xl"
+                             style={{ backgroundColor: customTheme.colors.surface + '30' }}>
+                          <div className={`text-sm ${
+                            theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                          }`}>
+                            أنت تستخدم حساب ضيف
+                          </div>
+                          <div className={`text-xs mt-1 ${
+                            theme === 'light' ? 'text-gray-500' : 'text-gray-500'
+                          }`}>
+                            قم بترقية الحساب للحفاظ على بياناتك ومزامنتها
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        {!isLoggedIn ? (
+                          <button
+                            onClick={() => setShowAuthModal(true)}
+                            className="px-4 py-3 rounded-xl font-medium transition-all text-sm"
+                            style={{
+                              background: `linear-gradient(to right, ${customTheme.colors.primary}, ${customTheme.colors.secondary})`,
+                              color: '#ffffff',
+                              border: `2px solid ${customTheme.colors.primary}`
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = `linear-gradient(to right, ${customTheme.colors.accent}, ${customTheme.colors.primary})`;
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = `linear-gradient(to right, ${customTheme.colors.primary}, ${customTheme.colors.secondary})`;
+                            }}
+                          >
+                            تسجيل الدخول
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setShowAccountSwitcher(true)}
+                            className="px-4 py-3 rounded-xl font-medium transition-all text-sm"
+                            style={{
+                              backgroundColor: customTheme.colors.surface,
+                              color: customTheme.colors.text,
+                              border: `2px solid ${customTheme.colors.border}`
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = customTheme.colors.border;
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = customTheme.colors.surface;
+                            }}
+                          >
+                            تبديل الحساب
+                          </button>
+                        )}
+                        
+                        {!isLoggedIn && (
+                          <button
+                            onClick={() => {
+                              setShowAuthModal(true);
+                              // This will be handled in AuthModal to show registration form
+                            }}
+                            className="px-4 py-3 rounded-xl font-medium transition-all text-sm"
+                            style={{
+                              backgroundColor: customTheme.colors.surface,
+                              color: customTheme.colors.text,
+                              border: `2px solid ${customTheme.colors.border}`
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = customTheme.colors.border;
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = customTheme.colors.surface;
+                            }}
+                          >
+                            ترقية الحساب
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-6">
@@ -277,30 +396,101 @@ export function SettingsButton() {
 
                     {/* Preset Avatar Grid */}
                     <div className="text-sm text-gray-500 mb-2">أو اختر من الصور الجاهزة:</div>
-                    <div className="grid grid-cols-5 gap-3">
-                      {AVATARS.map((avatar) => (
+                    
+                    {/* Search Input */}
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        value={avatarSearch}
+                        onChange={(e) => setAvatarSearch(e.target.value)}
+                        placeholder="ابحث بالرقم (1-250)..."
+                        className="w-full px-4 py-2 rounded-xl focus:outline-none transition-all"
+                        style={{
+                          backgroundColor: customTheme.colors.surface,
+                          borderColor: customTheme.colors.border,
+                          color: customTheme.colors.text
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = customTheme.colors.primary;
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = customTheme.colors.border;
+                        }}
+                      />
+                    </div>
+
+                    {/* Avatar Grid */}
+                    <div className="grid grid-cols-5 gap-2 mb-4 max-h-64 overflow-y-auto p-2 rounded-xl"
+                         style={{ backgroundColor: customTheme.colors.surface + '20' }}>
+                      {currentAvatars.map((avatar, index) => {
+                        const originalIndex = avatarSearch 
+                          ? AVATARS.indexOf(avatar) + 1
+                          : startIndex + index + 1;
+                        return (
+                          <button
+                            key={avatar}
+                            onClick={() => {
+                              setSelectedAvatar(avatar);
+                              setCustomAvatarUrl('');
+                            }}
+                            className="aspect-square rounded-xl overflow-hidden transition-all duration-200 hover:scale-110 relative group"
+                            style={{
+                              border: `3px solid ${selectedAvatar === avatar ? customTheme.colors.primary : customTheme.colors.border}`,
+                              boxShadow: selectedAvatar === avatar ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none'
+                            }}
+                            title={`Avatar ${originalIndex}`}
+                          >
+                            <img 
+                              src={avatar} 
+                              alt={`Avatar ${originalIndex}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {originalIndex}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between text-sm">
                         <button
-                          key={avatar}
-                          onClick={() => {
-                            setSelectedAvatar(avatar);
-                            setCustomAvatarUrl(''); // Clear custom URL when preset is selected
-                          }}
-                          className="aspect-square rounded-2xl overflow-hidden transition-all duration-200 hover:scale-110"
+                          onClick={() => setAvatarPage(Math.max(1, avatarPage - 1))}
+                          disabled={avatarPage === 1}
+                          className="px-3 py-1 rounded-lg transition-all disabled:opacity-50"
                           style={{
-                            border: `3px solid ${selectedAvatar === avatar ? customTheme.colors.primary : customTheme.colors.border}`,
-                            boxShadow: selectedAvatar === avatar ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none'
+                            backgroundColor: avatarPage === 1 ? customTheme.colors.border : customTheme.colors.primary,
+                            color: avatarPage === 1 ? customTheme.colors.text : '#ffffff'
                           }}
                         >
-                          <img 
-                            src={avatar} 
-                            alt={`Avatar ${AVATARS.indexOf(avatar) + 1}`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
+                          السابق
                         </button>
-                      ))}
+                        
+                        <span className="font-medium" style={{ color: customTheme.colors.text }}>
+                          صفحة {avatarPage} من {totalPages}
+                        </span>
+                        
+                        <button
+                          onClick={() => setAvatarPage(Math.min(totalPages, avatarPage + 1))}
+                          disabled={avatarPage === totalPages}
+                          className="px-3 py-1 rounded-lg transition-all disabled:opacity-50"
+                          style={{
+                            backgroundColor: avatarPage === totalPages ? customTheme.colors.border : customTheme.colors.primary,
+                            color: avatarPage === totalPages ? customTheme.colors.text : '#ffffff'
+                          }}
+                        >
+                          التالي
+                        </button>
+                      </div>
+                    )}
+                    
+                    <div className="text-xs text-gray-500 mt-2 text-center">
+                      {filteredAvatars.length} من {AVATARS.length} صورة متاحة
                     </div>
                   </div>
                 </div>
@@ -442,6 +632,17 @@ export function SettingsButton() {
           </div>
         </div>
       )}
+
+      {/* Authentication Modals */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
+      
+      <AccountSwitcher 
+        isOpen={showAccountSwitcher} 
+        onClose={() => setShowAccountSwitcher(false)} 
+      />
     </>
   );
 }

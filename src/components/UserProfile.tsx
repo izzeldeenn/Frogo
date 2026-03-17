@@ -156,13 +156,13 @@ export function UserProfile() {
                   <label className={`block mb-3 text-lg font-medium ${
                     theme === 'light' ? 'text-gray-700' : 'text-gray-300'
                   }`}>
-                    {t.deviceName}
+                    {t.username}
                   </label>
                   <input
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder={t.enterDeviceName}
+                    placeholder={t.enterUsername}
                     className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors text-lg ${
                       theme === 'light'
                         ? 'border-yellow-300 bg-white text-black focus:border-green-500'

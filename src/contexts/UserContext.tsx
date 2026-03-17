@@ -43,6 +43,7 @@ interface UserContextType {
   users: UserAccountFrontend[];
   currentAccountId: string;
   isTimerRunning: boolean;
+  isLoggedIn: boolean;
   getCurrentUser: () => UserAccountFrontend | null;
   getAllDeviceUsers: () => UserAccountFrontend[];
   updateUserName: (name: string) => void;
@@ -53,6 +54,11 @@ interface UserContextType {
   isTimerActive: () => boolean;
   isVirtualUser: (accountId: string) => boolean;
   getUserDailyActivity: (accountId: string) => Promise<DailyActivityFrontend | null>;
+  // New authentication methods
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
+  switchAccount: (accountId: string) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, username: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -64,6 +70,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   const dbSyncAccumulator = useRef(0);
 
@@ -78,11 +85,46 @@ export function UserProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('timerActive');
       }
       
-      // Get account ID
-      console.log('🔍 Getting account ID...');
-      const accountId = getAccountId();
-      console.log('✅ Account ID:', accountId);
-      setCurrentAccountId(accountId);
+      // Check for existing session
+      let savedAccountId = '';
+      let hasValidSession = false;
+      
+      if (typeof window !== 'undefined') {
+        savedAccountId = localStorage.getItem('currentAccountId') || '';
+        const savedLoginState = localStorage.getItem('isLoggedIn') === 'true';
+        
+        if (savedAccountId && savedLoginState) {
+          console.log('🔍 Found existing session for account:', savedAccountId);
+          
+          // Verify the account still exists in database
+          try {
+            const user = await userDB.getUserByAccountId(savedAccountId);
+            if (user) {
+              setCurrentAccountId(savedAccountId);
+              setIsLoggedIn(true);
+              hasValidSession = true;
+              console.log('✅ Existing session restored for:', user.username);
+            } else {
+              console.log('❌ Saved account not found in database, clearing session');
+              localStorage.removeItem('currentAccountId');
+              localStorage.removeItem('isLoggedIn');
+            }
+          } catch (error) {
+            console.log('❌ Error verifying saved session, clearing session');
+            localStorage.removeItem('currentAccountId');
+            localStorage.removeItem('isLoggedIn');
+          }
+        }
+      }
+      
+      // If no valid session, get/create device account
+      if (!hasValidSession) {
+        const accountId = getAccountId();
+        console.log('🔍 No active session, creating guest account with ID:', accountId);
+        setCurrentAccountId(accountId);
+        setIsLoggedIn(false);
+        createCurrentAccount();
+      }
       
       // Load initial leaderboard
       console.log('📊 Loading initial leaderboard...');
@@ -213,12 +255,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const createCurrentAccount = async () => {
-    console.log('🔧 Creating current account...');
+    console.log('🔧 Creating guest account...');
     const accountInfo = getAccountInfo();
     console.log('📋 Account info:', accountInfo);
     
     const currentAccount: UserAccountFrontend = {
-      id: '', // Will be set by database
+      id: undefined, // Will be set by database
       accountId: accountInfo.accountId,
       username: accountInfo.username,
       email: accountInfo.email,
@@ -232,11 +274,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
       lastActive: accountInfo.lastLogin
     };
     
-    console.log('💾 Saving account to database...');
+    console.log('💾 Saving guest account to database...');
     await saveAccountToDatabase(currentAccount);
-    console.log('📊 Setting users array with current account');
+    console.log('📊 Setting users array with guest account');
     setUsers([currentAccount]);
-    console.log('✅ Current account created and set');
+    console.log('✅ Guest account created and set');
   };
 
   const saveAccountToDatabase = async (userAccount: UserAccountFrontend) => {
@@ -244,22 +286,42 @@ export function UserProvider({ children }: { children: ReactNode }) {
       console.log('💾 Saving account to database:', userAccount.accountId);
       console.log('📋 Account data to save:', userAccount);
       
-      // Save account to Supabase
-      const result = await userDB.upsertUser({
-        account_id: userAccount.accountId,
-        username: userAccount.username,
-        email: userAccount.email,
-        hash_key: userAccount.hashKey,
-        avatar: userAccount.avatar,
-        score: userAccount.score,
-        rank: userAccount.rank,
-        study_time: userAccount.studyTime,
-        created_at: userAccount.createdAt,
-        last_active: userAccount.lastActive
-      });
+      // First check if account exists
+      const existingUser = await userDB.getUserByAccountId(userAccount.accountId);
       
-      console.log('✅ Account saved to database successfully:', result);
-      return result;
+      if (existingUser) {
+        // Update existing account
+        const result = await userDB.updateUserByAccountId(userAccount.accountId, {
+          account_id: userAccount.accountId,
+          username: userAccount.username,
+          email: userAccount.email,
+          hash_key: userAccount.hashKey,
+          avatar: userAccount.avatar,
+          score: userAccount.score,
+          rank: userAccount.rank,
+          study_time: userAccount.studyTime,
+          created_at: userAccount.createdAt,
+          last_active: userAccount.lastActive
+        });
+        console.log('✅ Account updated successfully:', result);
+        return result;
+      } else {
+        // Create new account
+        const result = await userDB.upsertUser({
+          account_id: userAccount.accountId,
+          username: userAccount.username,
+          email: userAccount.email,
+          hash_key: userAccount.hashKey,
+          avatar: userAccount.avatar,
+          score: userAccount.score,
+          rank: userAccount.rank,
+          study_time: userAccount.studyTime,
+          created_at: userAccount.createdAt,
+          last_active: userAccount.lastActive
+        });
+        console.log('✅ Account created successfully:', result);
+        return result;
+      }
     } catch (error: any) {
       console.error('❌ Error saving account to database:', error);
       console.error('❌ Error details:', JSON.stringify(error, null, 2));
@@ -442,11 +504,189 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Authentication methods
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      console.log('🔐 Attempting login with email:', email);
+      
+      if (!email || !password) {
+        return { success: false, error: 'Email and password are required' };
+      }
+
+      // Find user by email
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (error || !users) {
+        return { success: false, error: 'User not found' };
+      }
+
+      // For now, we'll use simple password comparison
+      // In a real app, you'd use proper password hashing (bcrypt, etc.)
+      if (users.password !== password) {
+        return { success: false, error: 'Invalid password' };
+      }
+
+      // Set current account and mark as logged in
+      setCurrentAccountId(users.account_id);
+      setIsLoggedIn(true);
+      
+      // Store session in localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('currentAccountId', users.account_id);
+        localStorage.setItem('isLoggedIn', 'true');
+      }
+
+      console.log('✅ Login successful for:', users.username);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Login error:', error);
+      return { success: false, error: 'Login failed' };
+    }
+  };
+
+  const logout = () => {
+    console.log('🚪 Logging out...');
+    
+    // Clear session but keep the account data intact
+    setCurrentAccountId('');
+    setIsLoggedIn(false);
+    
+    // Clear session from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('currentAccountId');
+      localStorage.removeItem('isLoggedIn');
+    }
+    
+    // Don't create a new account - just clear the session
+    // The account remains in database for future login
+    console.log('✅ Logged out successfully, account data preserved');
+  };
+
+  const switchAccount = async (accountId: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      console.log('🔄 Switching to account:', accountId);
+      
+      const user = await userDB.getUserByAccountId(accountId);
+      if (!user) {
+        return { success: false, error: 'Account not found' };
+      }
+
+      setCurrentAccountId(accountId);
+      setIsLoggedIn(true);
+      
+      // Store session in localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('currentAccountId', accountId);
+        localStorage.setItem('isLoggedIn', 'true');
+      }
+
+      console.log('✅ Account switch successful');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Account switch error:', error);
+      return { success: false, error: 'Failed to switch account' };
+    }
+  };
+
+  const register = async (email: string, password: string, username: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      console.log('📝 Upgrading guest account to registered user:', email);
+      
+      // Validation
+      if (!email || !password || !username) {
+        return { success: false, error: 'All fields are required' };
+      }
+
+      if (password.length < 6) {
+        return { success: false, error: 'Password must be at least 6 characters' };
+      }
+
+      if (!email.includes('@')) {
+        return { success: false, error: 'Invalid email address' };
+      }
+
+      // Check if user already exists
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', email)
+        .single();
+
+      if (existingUser) {
+        return { success: false, error: 'Email already registered' };
+      }
+
+      // Get current user to upgrade their existing account
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+        return { success: false, error: 'No current user found' };
+      }
+
+      console.log('🔄 Upgrading existing account:', currentUser.accountId);
+
+      // Update current user's account with email, password, and new username
+      const updatedUserData: Partial<UserAccount> = {
+        account_id: currentUser.accountId,
+        username: username, // Update username
+        email: email, // Add email
+        password: password, // Add password (in production, this should be hashed)
+        avatar: currentUser.avatar, // Keep existing avatar
+        score: currentUser.score, // Keep existing score
+        rank: currentUser.rank, // Keep existing rank
+        study_time: currentUser.studyTime, // Keep existing study time
+        created_at: currentUser.createdAt, // Keep original creation date
+        last_active: new Date().toISOString(), // Update last active
+        hash_key: currentUser.hashKey // Keep existing hash key
+      };
+
+      const result = await userDB.updateUserByAccountId(currentUser.accountId, updatedUserData);
+      
+      if (result) {
+        // Mark as logged in
+        setIsLoggedIn(true);
+        
+        // Store session in localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('currentAccountId', currentUser.accountId);
+          localStorage.setItem('isLoggedIn', 'true');
+        }
+
+        // Update local state with new user data
+        setUsers(prevUsers => {
+          return prevUsers.map(user => {
+            if (user.accountId === currentUser.accountId) {
+              return {
+                ...user,
+                username: username,
+                email: email,
+                lastActive: new Date().toISOString()
+              };
+            }
+            return user;
+          });
+        });
+
+        console.log('✅ Account upgrade successful');
+        return { success: true };
+      } else {
+        return { success: false, error: 'Account upgrade failed' };
+      }
+    } catch (error) {
+      console.error('❌ Account upgrade error:', error);
+      return { success: false, error: 'Account upgrade failed' };
+    }
+  };
+
   return (
     <UserContext.Provider value={{
       users,
       currentAccountId,
       isTimerRunning,
+      isLoggedIn,
       getCurrentUser,
       getAllDeviceUsers,
       updateUserName,
@@ -456,7 +696,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setTimerActive,
       isTimerActive,
       isVirtualUser,
-      getUserDailyActivity
+      getUserDailyActivity,
+      login,
+      logout,
+      switchAccount,
+      register
     }}>
       {children}
     </UserContext.Provider>
