@@ -165,7 +165,7 @@ export function CountdownTimer() {
         clearInterval(studyTimeRef.current);
       }
     };
-  }, [isRunning, timeLeft, updateUserStudyTime, setTimerActive, setTimerActiveIndicator, getCurrentUser]);
+  }, [isRunning, timeLeft]);
 
   const formatTime = (totalSeconds: number) => {
     const h = Math.floor(totalSeconds / 3600);

@@ -166,7 +166,7 @@ export function PomodoroTimer() {
         clearInterval(studyTimeRef.current);
       }
     };
-  }, [isRunning, timeLeft, currentSession, updateUserStudyTime, setTimerActive, setTimerActiveIndicator, getCurrentUser]);
+  }, [isRunning, timeLeft, currentSession]);
 
   const handleSessionComplete = () => {
     setIsRunning(false);
