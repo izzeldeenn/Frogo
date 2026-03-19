@@ -689,3 +689,6 @@ export function useUser() {
   }
   return context;
 }
+
+// Export the context directly for components that need it
+export { UserContext };

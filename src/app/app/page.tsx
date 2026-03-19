@@ -5,7 +5,7 @@ import { Logo } from '@/components/Logo';
 import { UserRankings } from '@/components/UserRankings';
 import { CurrentUserSelector } from '@/components/CurrentUserSelector';
 import { SettingsButton } from '@/components/SettingsButton';
-import { TimerSelector } from '@/components/TimerSelector';
+import { ServiceSelector } from '@/components/ServiceSelector';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { UserProfile } from '@/components/UserProfile';
 import { FullscreenPrompt } from '@/components/FullscreenPrompt';
@@ -168,7 +168,7 @@ function HomeContent() {
               </div>
             )}
           </div>
-          <TimerSelector />
+          <ServiceSelector />
         </div>
       </div>
 
@@ -220,7 +220,7 @@ function HomeContent() {
                 {BACKGROUNDS.find(bg => bg.id === selectedBackground)?.name}
               </div>
             )}
-            <TimerSelector />
+            <ServiceSelector />
           </div>
 
           {/* User Section - Bottom */}

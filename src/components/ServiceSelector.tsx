@@ -9,14 +9,17 @@ import { PomodoroTimer } from './PomodoroTimer';
 import { CountdownTimer } from './CountdownTimer';
 import { YouTubeTimer } from './YouTubeTimer';
 import { UserActivityDashboard } from './UserActivityDashboard';
+import FriendshipManager from './FriendshipManager';
+import MessagingSystem from './MessagingSystem';
 
-type TimerType = 'stopwatch' | 'pomodoro' | 'countdown' | 'youtube' | 'dashboard';
+type TimerType = 'stopwatch' | 'pomodoro' | 'countdown' | 'youtube' | 'dashboard' | 'friends' | 'messages';
 
-export function TimerSelector() {
+export function ServiceSelector() {
   const { theme } = useTheme();
   const { t } = useLanguage();
   const customTheme = useCustomThemeClasses();
   const [activeTimer, setActiveTimer] = useState<TimerType>('stopwatch');
+  const [selectedFriendForMessaging, setSelectedFriendForMessaging] = useState<string | null>(null);
   
   // Refs for scroll containers
   const mobileScrollRef = useRef<HTMLDivElement>(null);
@@ -25,6 +28,11 @@ export function TimerSelector() {
   // State for scroll visibility
   const [canScrollMobile, setCanScrollMobile] = useState({ left: false, right: false });
   const [canScrollDesktop, setCanScrollDesktop] = useState({ up: false, down: false });
+
+  const handleSwitchToMessaging = (friendId: string) => {
+    setSelectedFriendForMessaging(friendId);
+    setActiveTimer('messages');
+  };
 
   const renderTimer = () => {
     switch (activeTimer) {
@@ -38,6 +46,10 @@ export function TimerSelector() {
         return <YouTubeTimer />;
       case 'dashboard':
         return <UserActivityDashboard />;
+      case 'friends':
+        return <FriendshipManager onSwitchToMessaging={handleSwitchToMessaging} />;
+      case 'messages':
+        return <MessagingSystem selectedFriendId={selectedFriendForMessaging} />;
       default:
         return <Timer />;
     }
@@ -49,7 +61,9 @@ export function TimerSelector() {
     { id: 'pomodoro', type: 'pomodoro' as TimerType, label: t.pomodoro, icon: '🍅' },
     { id: 'countdown', type: 'countdown' as TimerType, label: t.countdown, icon: '⏳' },
     { id: 'youtube', type: 'youtube' as TimerType, label: t.youtube, icon: '🎬' },
-    { id: 'dashboard', type: 'dashboard' as TimerType, label: t.rank === 'ترتيب' ? 'لوحة التحكم' : 'Dashboard', icon: '📈' }
+    { id: 'dashboard', type: 'dashboard' as TimerType, label: t.rank === 'ترتيب' ? 'لوحة التحكم' : 'Dashboard', icon: '📈' },
+    { id: 'friends', type: 'friends' as TimerType, label: t.rank === 'ترتيب' ? 'الأصدقاء' : 'Friends', icon: '👥' },
+    { id: 'messages', type: 'messages' as TimerType, label: t.rank === 'ترتيب' ? 'الرسائل' : 'Messages', icon: '💬' }
   ];
 
   // Check scroll position for mobile
