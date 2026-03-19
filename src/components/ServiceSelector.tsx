@@ -30,8 +30,10 @@ export function ServiceSelector() {
   const [canScrollDesktop, setCanScrollDesktop] = useState({ up: false, down: false });
 
   const handleSwitchToMessaging = (friendId: string) => {
+    console.log('🔍 ServiceSelector - handleSwitchToMessaging called with friendId:', friendId);
     setSelectedFriendForMessaging(friendId);
     setActiveTimer('messages');
+    console.log('🔍 ServiceSelector - Set activeTimer to messages, friendId:', friendId);
   };
 
   const renderTimer = () => {

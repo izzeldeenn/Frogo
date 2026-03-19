@@ -56,6 +56,8 @@ interface MessagingSystemProps {
 }
 
 export default function MessagingSystem({ selectedFriendId }: MessagingSystemProps = {}) {
+  console.log('🔍 MessagingSystem - Component initialized with selectedFriendId:', selectedFriendId);
+  
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [selectedFriendIdState, setSelectedFriendIdState] = useState<string | null>(selectedFriendId || null);
@@ -89,6 +91,15 @@ export default function MessagingSystem({ selectedFriendId }: MessagingSystemPro
   useEffect(() => {
     loadConversations();
   }, []);
+
+  // Track selectedFriendId changes
+  useEffect(() => {
+    console.log('🔍 MessagingSystem - selectedFriendId changed to:', selectedFriendId);
+    if (selectedFriendId !== selectedFriendIdState) {
+      console.log('🔍 MessagingSystem - Updating selectedFriendIdState to:', selectedFriendId);
+      setSelectedFriendIdState(selectedFriendId || null);
+    }
+  }, [selectedFriendId]);
 
   // Real-time subscription for messages
   useEffect(() => {
@@ -220,16 +231,16 @@ export default function MessagingSystem({ selectedFriendId }: MessagingSystemPro
   }, [selectedConversation]);
 
   useEffect(() => {
-    if (selectedFriendId && conversations.length > 0 && !isCreatingConversation) {
+    if (selectedFriendIdState && conversations.length > 0 && !isCreatingConversation) {
       const currentUserId = getCurrentUserId();
       
       // Prevent selecting conversation with self
-      if (selectedFriendId === currentUserId) {
+      if (selectedFriendIdState === currentUserId) {
         console.error('❌ Cannot select conversation with self');
         return;
       }
       
-      console.log('🔍 Debug - Looking for conversation with friend ID:', selectedFriendId);
+      console.log('🔍 Debug - Looking for conversation with friend ID:', selectedFriendIdState);
       console.log('🔍 Debug - Available conversations:', conversations.map(c => ({ 
         id: c.id, 
         userId: c.user?.id, 
@@ -240,12 +251,13 @@ export default function MessagingSystem({ selectedFriendId }: MessagingSystemPro
       // Find conversation with the selected friend
       const conversation = conversations.find(conv => {
         console.log('🔍 Debug - Checking conversation:', {
-          convId: conv.user?.id,
+          convId: conv.id,
+          convUserId: conv.user?.id,
           convAccountId: conv.user?.account_id,
-          targetId: selectedFriendId,
-          match: conv.user?.id === selectedFriendId || conv.user?.account_id === selectedFriendId
+          targetId: selectedFriendIdState,
+          match: conv.user?.id === selectedFriendIdState || conv.user?.account_id === selectedFriendIdState
         });
-        return conv.user?.id === selectedFriendId || conv.user?.account_id === selectedFriendId;
+        return conv.user?.id === selectedFriendIdState || conv.user?.account_id === selectedFriendIdState;
       });
       
       console.log('🔍 Debug - Found conversation:', conversation?.user?.username);
@@ -255,21 +267,21 @@ export default function MessagingSystem({ selectedFriendId }: MessagingSystemPro
       } else {
         console.log('🔍 Debug - No conversation found, creating new one...');
         // Create a new conversation
-        createConversationWithFriend(selectedFriendId);
+        createConversationWithFriend(selectedFriendIdState);
       }
-    } else if (selectedFriendId && conversations.length === 0 && !isCreatingConversation) {
+    } else if (selectedFriendIdState && conversations.length === 0 && !isCreatingConversation) {
       const currentUserId = getCurrentUserId();
       
       // Prevent creating conversation with self
-      if (selectedFriendId === currentUserId) {
+      if (selectedFriendIdState === currentUserId) {
         console.error('❌ Cannot create conversation with self');
         return;
       }
       
       console.log('🔍 Debug - No conversations at all, creating new one...');
-      createConversationWithFriend(selectedFriendId);
+      createConversationWithFriend(selectedFriendIdState);
     }
-  }, [selectedFriendId, conversations, isCreatingConversation]);
+  }, [selectedFriendIdState, conversations, isCreatingConversation]);
 
   useEffect(() => {
     scrollToBottom();
