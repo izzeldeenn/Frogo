@@ -344,21 +344,50 @@ export default function MessagingSystem({ selectedFriendId }: MessagingSystemPro
       return true;
     }
     
-    // Create conversation entry in conversations table
-    const { error } = await supabase
-      .from('conversations')
+    // Create conversation entry in the base table (not the view)
+    console.log('🔍 Debug - Attempting to create conversation with:', {
+      user1_id: currentUserId,
+      user2_id: friendId,
+      last_message: null,
+      last_message_at: new Date().toISOString(),
+      last_message_sender_id: null
+    });
+    
+    // Use the base table instead of the view
+    const { data, error } = await supabase
+      .from('conversations_base') // Try the base table first
       .insert({
         user1_id: currentUserId,
         user2_id: friendId,
         last_message: null,
         last_message_at: new Date().toISOString(),
         last_message_sender_id: null
-      });
+      })
+      .select();
 
     if (error) {
-      console.error('Error creating conversation:', error);
-      return false;
+      console.error('❌ Error creating conversation:', error);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error details:', error.details);
+      
+      // If table creation fails, just send a message directly
+      console.log('🔍 Debug - Table creation failed, sending message directly...');
+      const welcomeMessage = "مرحباً! 👋";
+      const messageResult = await messageDB.sendMessage(currentUserId, friendId, welcomeMessage);
+      
+      if (messageResult) {
+        console.log('✅ Message sent successfully, conversation created implicitly');
+        await loadConversations();
+        return true;
+      } else {
+        console.error('❌ Failed to send message as fallback');
+        return false;
+      }
     }
+    
+    console.log('✅ Conversation created successfully:', data);
     
     // Send a welcome message to make the conversation visible
     const welcomeMessage = "مرحباً! 👋";
