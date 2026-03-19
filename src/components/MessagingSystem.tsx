@@ -360,7 +360,17 @@ export default function MessagingSystem({ selectedFriendId }: MessagingSystemPro
       return false;
     }
     
-    // Reload conversations to get the new one
+    // Send a welcome message to make the conversation visible
+    const welcomeMessage = "مرحباً! 👋";
+    const messageResult = await messageDB.sendMessage(currentUserId, friendId, welcomeMessage);
+    
+    if (messageResult) {
+      console.log('🔍 Debug - Welcome message sent successfully');
+    } else {
+      console.error('❌ Failed to send welcome message');
+    }
+    
+    // Reload conversations to get the new one with the message
     await loadConversations();
     return true;
   } catch (error) {
