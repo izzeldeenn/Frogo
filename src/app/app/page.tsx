@@ -280,7 +280,7 @@ function HomeContent() {
               <SettingsButton />
             </div>
           </div>
-          <CurrentUserSelector />
+          <CurrentUserSelector studyStreak={studyStreak} />
           <UserRankings />
         </div>
         
@@ -289,13 +289,6 @@ function HomeContent() {
           className="w-3/4 flex items-center justify-center p-8 relative h-full overflow-hidden"
           style={getBackgroundStyles(selectedBackground)}
         >
-          <div className="absolute top-4 left-4 flex items-center space-x-3 space-x-reverse z-[9998] flex-shrink-0">
-            {/* Study Streak */}
-            <div className="flex items-center space-x-1 space-x-reverse bg-black/20 backdrop-blur-sm text-white px-3 py-1.5 rounded-full shadow-lg border border-white/30">
-              <span className="text-lg">🔥</span>
-              <span className="text-sm font-bold">{studyStreak} أيام</span>
-            </div>
-          </div>
           <ServiceSelector />
         </div>
       </div>
@@ -343,11 +336,6 @@ function HomeContent() {
             className="flex-1 flex items-center justify-center p-4 min-h-[60vh] flex-shrink-0 relative"
             style={getBackgroundStyles(selectedBackground)}
           >
-            {/* Study Streak - Mobile */}
-            <div className="absolute top-2 left-2 flex items-center space-x-1 space-x-reverse bg-black/20 backdrop-blur-sm text-white px-2 py-1 rounded-full shadow-lg border border-white/30">
-              <span className="text-sm">🔥</span>
-              <span className="text-xs font-bold">{studyStreak} أيام</span>
-            </div>
             <ServiceSelector />
           </div>
 
@@ -359,7 +347,7 @@ function HomeContent() {
               borderColor: customTheme.colors.border
             }}
           >
-            <CurrentUserSelector />
+            <CurrentUserSelector studyStreak={studyStreak} />
             <div className="mt-4">
               <UserRankings />
             </div>

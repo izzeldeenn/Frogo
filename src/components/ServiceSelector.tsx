@@ -267,7 +267,7 @@ export function ServiceSelector() {
   }, [getCurrentUser]);
 
   return (
-    <div className="w-full h-screen flex flex-col overflow-hidden">
+    <div className="w-full h-full md:h-screen flex flex-col overflow-hidden">
       {/* Active Timer - Scrollable Container */}
       <div className="flex-1 overflow-hidden pt-8">
         <div className="h-full overflow-y-auto">
@@ -278,7 +278,7 @@ export function ServiceSelector() {
       </div>
 
       {/* Bottom Icons - All Screens with Horizontal Scroll */}
-      <div className="relative">
+      <div className="relative flex-shrink-0 border-t border-gray-200 dark:border-gray-700">
         {/* Left Arrow */}
         {canScrollMobile.left && (
           <button
@@ -296,7 +296,7 @@ export function ServiceSelector() {
         {/* Scrollable Container */}
         <div
           ref={mobileScrollRef}
-          className="flex justify-center items-center gap-4 p-4 border-t border-gray-200 dark:border-gray-700 overflow-x-auto"
+          className="flex justify-center items-center gap-4 p-4 overflow-x-auto"
         >
           {timerButtons.map((button) => (
             <button

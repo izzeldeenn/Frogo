@@ -26,7 +26,7 @@ const AVATARS = [
   'https://api.dicebear.com/7.x/avataaars/svg?seed=avatar15'
 ];
 
-export function CurrentUserSelector() {
+export function CurrentUserSelector({ studyStreak }: { studyStreak?: number }) {
   const { theme } = useTheme();
   const { coins, level, experience } = useGamification();
   const { getCurrentUser, updateUserName, updateUserAvatar, isTimerActive } = useUser();
@@ -146,15 +146,27 @@ export function CurrentUserSelector() {
                 }`}>
                   {currentUser.username}
                 </h2>
-              </div>
-              
-              <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                theme === 'light'
-                  ? 'bg-gradient-to-r from-yellow-50 to-green-50 text-green-700 border border-yellow-200'
-                  : 'bg-gradient-to-r from-yellow-900/30 to-green-900/30 text-green-300 border border-yellow-700/50'
-              }`}>
-                <span className="w-1 h-1 bg-green-500 rounded-full mr-1 animate-pulse"></span>
-                {todayStudyTime}m ⏱️
+                <div className="flex items-center space-x-2 mt-1">
+                  <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    theme === 'light'
+                      ? 'bg-gradient-to-r from-yellow-50 to-green-50 text-green-700 border border-yellow-200'
+                      : 'bg-gradient-to-r from-yellow-900/30 to-green-900/30 text-green-300 border border-yellow-700/50'
+                  }`}>
+                    <span className="w-1 h-1 bg-green-500 rounded-full mr-1 animate-pulse"></span>
+                    {todayStudyTime}m ⏱️
+                  </div>
+                  
+                  {studyStreak !== undefined && (
+                    <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      theme === 'light'
+                        ? 'bg-gradient-to-r from-orange-50 to-red-50 text-orange-700 border border-orange-200'
+                        : 'bg-gradient-to-r from-orange-900/30 to-red-900/30 text-orange-300 border border-orange-700/50'
+                    }`}>
+                      <span className="text-sm mr-1">🔥</span>
+                      {studyStreak} أيام
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
