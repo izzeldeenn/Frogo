@@ -267,10 +267,12 @@ export function ServiceSelector() {
   }, [getCurrentUser]);
 
   return (
-    <div className="w-full h-full flex flex-col">
-      {/* Active Timer */}
-      <div className="flex-1 flex items-center justify-center">
-        {renderTimer()}
+    <div className="w-full h-screen flex flex-col overflow-hidden">
+      {/* Active Timer - Scrollable Container */}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto">
+          {renderTimer()}
+        </div>
       </div>
 
       {/* Bottom Icons - All Screens with Horizontal Scroll */}
