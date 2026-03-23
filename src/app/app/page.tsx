@@ -68,12 +68,13 @@ const BACKGROUNDS = [
 function HomeContent() {
   const { theme } = useTheme();
   const { language } = useLanguage();
-  const { setTimerActive, getCurrentUser } = useUser();
+  const { setTimerActive, isTimerActive, getCurrentUser } = useUser();
   const customTheme = useCustomThemeClasses();
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [selectedBackground, setSelectedBackground] = useState('default');
   const [isLoading, setIsLoading] = useState(true);
   const [studyStreak, setStudyStreak] = useState(0);
+  const [wakeLock, setWakeLock] = useState<any>(null);
 
   // Calculate study streak based on user activity (matching ActivityGraph logic)
   const calculateStudyStreak = () => {
@@ -146,6 +147,60 @@ function HomeContent() {
     
     return () => clearInterval(streakInterval);
   }, [getCurrentUser]);
+
+  // Wake Lock functionality to prevent screen from locking
+  const requestWakeLock = async () => {
+    try {
+      if ('wakeLock' in navigator && 'request' in (navigator as any).wakeLock) {
+        const wakeLockSentinel = await (navigator as any).wakeLock.request('screen');
+        setWakeLock(wakeLockSentinel);
+        console.log('🔒 Wake Lock activated - screen will stay awake');
+        
+        // Listen for wake lock release
+        wakeLockSentinel.addEventListener('release', () => {
+          console.log('🔓 Wake Lock released');
+          setWakeLock(null);
+        });
+      } else {
+        console.warn('⚠️ Wake Lock API not supported on this device');
+      }
+    } catch (error) {
+      console.error('❌ Error requesting Wake Lock:', error);
+    }
+  };
+
+  const releaseWakeLock = () => {
+    if (wakeLock) {
+      wakeLock.release();
+      setWakeLock(null);
+    }
+  };
+
+  // Handle Wake Lock based on timer state
+  useEffect(() => {
+    const timerIsActive = isTimerActive();
+    
+    if (timerIsActive) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+    
+    return () => {
+      releaseWakeLock();
+    };
+  }, []); // Empty dependency array, will be called on mount and unmount only
+
+  // Separate effect to handle timer state changes
+  useEffect(() => {
+    const timerIsActive = isTimerActive();
+    
+    if (timerIsActive) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+  }, [isTimerActive]);
 
   useEffect(() => {
     // Listen for fullscreen changes
