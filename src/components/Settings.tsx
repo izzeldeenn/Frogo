@@ -238,120 +238,89 @@ export function SettingsButton() {
             }}
           >
             <div className="flex h-full">
-              {/* Sidebar */}
-              <div 
-                className="w-52 relative overflow-hidden"
+              {/* Sidebar - redesigned compact vertical layout */}
+              <div
+                className="w-44 relative overflow-hidden flex-shrink-0"
                 style={{
-                  background: `linear-gradient(180deg, ${customTheme.colors.primary}05 0%, transparent 100%)`,
+                  background: `linear-gradient(180deg, ${customTheme.colors.primary}06 0%, transparent 100%)`,
                 }}
               >
-                {/* Decorative Elements */}
-                <div 
-                  className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-30"
+                {/* Decorative Elements (kept) */}
+                <div
+                  className="absolute top-0 right-0 w-28 h-28 rounded-full blur-3xl opacity-30"
                   style={{
                     background: `radial-gradient(circle, ${customTheme.colors.primary}, transparent)`
                   }}
                 />
-                <div 
-                  className="absolute bottom-0 left-0 w-24 h-24 rounded-full blur-2xl opacity-20"
+                <div
+                  className="absolute bottom-0 left-0 w-20 h-20 rounded-full blur-2xl opacity-20"
                   style={{
                     background: `radial-gradient(circle, ${customTheme.colors.accent}, transparent)`
                   }}
                 />
-                
-                <div className="relative p-6">
-                  <div className="mb-8">
-                    <div className="flex items-center justify-center mb-4">
-                      <div 
-                        className="w-16 h-16 rounded-3xl flex items-center justify-center relative overflow-hidden"
-                        style={{
-                          background: `linear-gradient(135deg, ${customTheme.colors.primary}, ${customTheme.colors.accent})`,
-                          boxShadow: `0 8px 32px ${customTheme.colors.primary}40`
-                        }}
-                      >
-                        <span className="text-white text-2xl">⚙️</span>
-                        <div 
-                          className="absolute inset-0 rounded-3xl"
-                          style={{
-                            background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%)',
-                            animation: 'shimmer 3s infinite'
-                          }}
-                        />
-                      </div>
+
+                <div className="relative p-4 flex flex-col h-full">
+                  {/* Profile compact header */}
+                  <div className="flex items-center gap-3 px-1 py-2">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden"
+                      style={{
+                        background: `linear-gradient(135deg, ${customTheme.colors.primary}, ${customTheme.colors.accent})`,
+                        boxShadow: `0 6px 20px ${customTheme.colors.primary}30`
+                      }}
+                    >
+                      {currentUser?.avatar ? (
+                        <img src={currentUser.avatar} alt={currentUser.username} className="w-12 h-12 object-cover rounded-xl" />
+                      ) : (
+                        <span className="text-white text-lg">{currentUser?.username ? currentUser.username.charAt(0).toUpperCase() : '⚙️'}</span>
+                      )}
                     </div>
-                    <h3 className={`text-center text-lg font-black tracking-tight ${
-                      theme === 'light' ? 'text-gray-900' : 'text-gray-50'
-                    }`}>
-                      {t.settings}
-                    </h3>
-                    <div className={`text-center text-xs mt-2 opacity-70 ${
-                      theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                    }`}>
-                      مركز التحكم
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-sm font-bold truncate`} style={{ color: theme === 'light' ? '#0b1220' : '#f8fafc' }}>{currentUser?.username || t.settings}</div>
+                      <div className="text-xxs opacity-70" style={{ fontSize: 11, color: theme === 'light' ? '#475569' : '#cbd5e1' }}>{coins} {t.coins || 'عملات'} · Lv {level}</div>
                     </div>
                   </div>
-                  
-                  <nav className="space-y-3">
-                    {SETTINGS_SECTIONS.map((section, index) => (
-                      <button
-                        key={section.id}
-                        onClick={() => setActiveSection(section.id)}
-                        className={`w-full group relative overflow-hidden rounded-2xl transition-all duration-500 ${
-                          activeSection === section.id ? 'scale-105' : 'hover:scale-102'
-                        }`}
-                        style={{
-                          background: activeSection === section.id 
-                            ? `linear-gradient(135deg, ${customTheme.colors.primary}, ${customTheme.colors.accent})`
-                            : 'transparent',
-                          boxShadow: activeSection === section.id 
-                            ? `0 12px 48px ${customTheme.colors.primary}50, 0 4px 16px ${customTheme.colors.primary}30`
-                            : `0 2px 8px ${customTheme.colors.border}20`,
-                          transform: `translateY(${index * 2}px)`
-                        }}
-                      >
-                        <div className="relative px-4 py-4 flex items-center justify-end space-x-reverse space-x-3">
-                          <div className="text-right">
-                            <div className={`text-sm font-bold transition-colors duration-300 ${
-                              activeSection === section.id ? 'text-white' : customTheme.colors.text
-                            }`}>
-                              {section.name}
-                            </div>
-                            <div className={`text-xs opacity-70 transition-colors duration-300 ${
-                              activeSection === section.id ? 'text-white/80' : customTheme.colors.text + '70'
-                            }`}>
-                              {section.id === 'profile' && 'المعلومات الشخصية'}
-                              {section.id === 'appearance' && 'الشكل والمظهر'}
-                              {section.id === 'themes' && 'تخصيص الثيمات'}
-                              {section.id === 'account' && 'إدارة الحساب'}
-                            </div>
-                          </div>
-                          <div 
-                            className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-                            style={{
-                              background: activeSection === section.id 
-                                ? 'rgba(255,255,255,0.2)' 
-                                : `linear-gradient(135deg, ${customTheme.colors.surface}, ${customTheme.colors.background})`,
-                              boxShadow: activeSection === section.id 
-                                ? 'inset 0 2px 8px rgba(255,255,255,0.3)'
-                                : `0 4px 16px ${customTheme.colors.border}30`
-                            }}
-                          >
-                            <span className={`text-xl transition-all duration-300 ${
-                              activeSection === section.id ? 'text-white' : ''
-                            }`}>{section.icon}</span>
-                          </div>
-                        </div>
-                        
-                        {/* Hover Effect Overlay */}
-                        <div 
-                          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                          style={{
-                            background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)'
-                          }}
-                        />
-                      </button>
-                    ))}
+
+                  <nav className="mt-4 flex-1 overflow-auto">
+                    <ul className="flex flex-col gap-2">
+                      {SETTINGS_SECTIONS.map((section) => {
+                        const active = activeSection === section.id;
+                        return (
+                          <li key={section.id}>
+                            <button
+                              onClick={() => setActiveSection(section.id)}
+                              className={`w-full flex items-center gap-3 pr-3 pl-2 py-2 rounded-lg transition-colors duration-200 group ${active ? '' : 'hover:bg-white/5'}`}
+                              style={{
+                                background: active ? `linear-gradient(90deg, ${customTheme.colors.primary}22, ${customTheme.colors.accent}12)` : 'transparent',
+                                borderLeft: active ? `4px solid ${customTheme.colors.primary}` : '4px solid transparent'
+                              }}
+                            >
+                              <div
+                                className="w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0"
+                                style={{
+                                  background: active ? customTheme.colors.primary : 'transparent',
+                                  color: active ? '#ffffff' : (theme === 'light' ? customTheme.colors.text : '#e6eef8')
+                                }}
+                              >
+                                <span className="text-lg">{section.icon}</span>
+                              </div>
+                              <div className="text-right flex-1 min-w-0">
+                                <div className="text-sm font-semibold truncate" style={{ color: theme === 'light' ? '#0b1220' : '#f8fafc' }}>{section.name}</div>
+                                <div className="text-xxs opacity-70 truncate" style={{ fontSize: 11, color: theme === 'light' ? '#64748b' : '#9aa4b2' }}>
+                                  {section.id === 'profile' && 'المعلومات الشخصية'}
+                                  {section.id === 'appearance' && 'الشكل والمظهر'}
+                                  {section.id === 'themes' && 'تخصيص الثيمات'}
+                                  {section.id === 'account' && 'إدارة الحساب'}
+                                </div>
+                              </div>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </nav>
+
+
                 </div>
               </div>
 
