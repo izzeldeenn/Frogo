@@ -357,20 +357,6 @@ function HomeContent() {
               <ServiceSelector />
               <RankingDisplay studyStreak={studyStreak} />
             </div>
-
-            {/* User Section - Bottom */}
-            <div 
-              className="p-4 border-t flex-shrink-0"
-              style={{
-                backgroundColor: customTheme.colors.surface,
-                borderColor: customTheme.colors.border
-              }}
-            >
-              <CurrentUserSelector studyStreak={studyStreak} />
-              <div className="mt-4">
-                <UserRankings />
-              </div>
-            </div>
           </div>
         </div>
       </div>
