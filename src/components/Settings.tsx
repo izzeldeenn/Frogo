@@ -12,6 +12,8 @@ import { AccountSwitcher } from '@/components/AccountSwitcher';
 import { dailyActivityDB } from '@/lib/dailyActivity';
 import { ActivityContribution } from '@/lib/dailyActivity';
 import { useCustomThemeClasses } from '@/hooks/useCustomThemeClasses';
+import { BACKGROUNDS } from '@/constants/backgrounds';
+import { PresetSelector } from '@/components/PresetSelector';
 
 // Generate 250 avatars dynamically
 const AVATARS = Array.from({ length: 250 }, (_, i) => 
@@ -28,37 +30,10 @@ interface ThemeColors {
   border: string;
 }
 
-const BACKGROUNDS = [
-  { id: 'default', name: 'افتراضي', value: 'transparent' },
-  { id: 'gradient1', name: 'تدرج أخضر', value: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  { id: 'gradient2', name: 'تدرج أزرق', value: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-  { id: 'gradient3', name: 'تدرج برتقالي', value: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
-  { id: 'gradient4', name: 'تدرج بنفسجي', value: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
-  { id: 'gradient5', name: 'تدرج رمادي', value: 'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)' },
-  { id: 'pattern1', name: 'نقوش بسيط', value: 'repeating-linear-gradient(45deg, #606dbc 25%, transparent 25%), repeating-linear-gradient(-45deg, #606dbc 25%, transparent 25%)' },
-  { id: 'pattern2', name: 'نقوش متقاطع', value: 'repeating-linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%)' },
-  // Focus-friendly commercial backgrounds
-  { id: 'focus1', name: 'غابة مركزة', value: 'url("https://images.unsplash.com/photo-1540206395-68808572332f?w=1920&h=1080&fit=crop&crop=entropy&cs=tinysrgb")' },
-  { id: 'focus2', name: 'مكتبة هادئة', value: 'url("https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1920&h=1080&fit=crop&crop=entropy&cs=tinysrgb")' },
-  { id: 'focus3', name: 'سماء صافية', value: 'url("https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=1080&fit=crop&crop=entropy&cs=tinysrgb")' },
-  { id: 'focus4', name: 'طبيعة calm', value: 'url("https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1920&h=1080&fit=crop&crop=entropy&cs=tinysrgb")' },
-  { id: 'focus5', name: 'محيط طبيعي', value: 'url("https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&h=1080&fit=crop&crop=entropy&cs=tinysrgb")' },
-  // Animated focus backgrounds
-  { id: 'animated1', name: 'غيوم متحرك', value: 'url("https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3YzYyaWJyMXQ0YWtyYzFyZWVvdDFha3M1bWFkeTg0c3F6YmszeWYwdSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/SjkNtYAuV4OXbRIGEc/giphy.gif")' },
-  { id: 'animated2', name: 'مطر متحركة', value: 'url("https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3YzYyaWJyMXQ0YWtyYzFyZWVvdDFha3M1bWFkeTg0c3F6YmszeWYwdSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/LlDxkLadoRcmlcMbP8/giphy.gif")' },
-  { id: 'animated3', name: 'نجوم ساقطة', value: 'url("https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3Y2Z3eTNmdm5qcjY0enNhdWwwbjY5aDFiZ2tzc3AycjM3MG5ma3VucSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/jDl06sVsg4WVrCEJtS/giphy.gif")' },
-  { id: 'animated4', name: 'موجات متحركة', value: 'url("https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3Y2Z3eTNmdm5qcjY0enNhdWwwbjY5aDFiZ2tzc3AycjM3MG5ma3VucSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/j3OL6mSc2FeV0UHMDg/giphy.gif")' },
-  { id: 'animated5', name: 'غيوم لطيف', value: 'url("https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3YzYyaWJyMXQ0YWtyYzFyZWVvdDFha3M1bWFkeTg0c3F6YmszeWYwdSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/LXxWO0pgGEma8W40A9/giphy.gif")' },
-  // Additional animated backgrounds
-  { id: 'animated6', name: 'غابة متحركة', value: 'url("https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3YzYyaWJyMXQ0YWtyYzFyZWVvdDFha3M1bWFkeTg0c3F6YmszeWYwdSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/SjkNtYAuV4OXbRIGEc/giphy.gif")' },
-  { id: 'animated7', name: 'مطر هادئ', value: 'url("https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3YzYyaWJyMXQ0YWtyYzFyZWVvdDFha3M1bWFkeTg0c3F6YmszeWYwdSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/LlDxkLadoRcmlcMbP8/giphy.gif")' },
-  { id: 'animated8', name: 'نجوم لامعة', value: 'url("https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3Y2Z3eTNmdm5qcjY0enNhdWwwbjY5aDFiZ2tzc3AycjM3MG5ma3VucSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/jDl06sVsg4WVrCEJtS/giphy.gif")' },
-  { id: 'animated9', name: 'أمواج هادئة', value: 'url("https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3Y2Z3eTNmdm5qcjY0enNhdWwwbjY5aDFiZ2tzc3AycjM3MG5ma3VucSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/j3OL6mSc2FeV0UHMDg/giphy.gif")' },
-  { id: 'animated10', name: 'غيوم ناعمة', value: 'url("https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3Y2Z3eTNmdm5qcjY0enNhdWwwbjY5aDFiZ2tzc3AycjM3MG5ma3VucSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/LXxWO0pgGEma8W40A9/giphy.gif")' }
-];
 
 // Settings sections configuration
 const SETTINGS_SECTIONS = [
+  { id: 'presets', name: 'الإعدادات المسبقة', icon: '🎨' },
   { id: 'profile', name: 'الملف الشخصي', icon: '👤' },
   { id: 'appearance', name: 'المظهر', icon: '🎨' },
   { id: 'themes', name: 'الثيمات', icon: '🎭' },
@@ -487,6 +462,7 @@ export function SettingsButton() {
                         <div className={`text-xs opacity-70 mt-1 ${
                           theme === 'light' ? 'text-gray-600' : 'text-gray-400'
                         }`}>
+                          {activeSection === 'presets' && 'اختر شكلاً جاهزاً مع إعدادات متكاملة'}
                           {activeSection === 'profile' && 'إدارة ملفك الشخصي والصورة الرمزية'}
                           {activeSection === 'appearance' && 'تخصيص المظهر واللغة'}
                           {activeSection === 'themes' && 'اختيار وتخصيص الثيمات والخلفيات'}
@@ -966,6 +942,53 @@ export function SettingsButton() {
                     </div>
                   )}
 
+                  {activeSection === 'presets' && (
+                    <div className="space-y-6">
+                      <div 
+                        className="relative overflow-hidden rounded-3xl p-6 backdrop-blur-xl"
+                        style={{
+                          background: `linear-gradient(135deg, ${customTheme.colors.surface}60, ${customTheme.colors.background}20)`,
+                          border: `1px solid ${customTheme.colors.border}20`,
+                          boxShadow: `0 8px 32px ${customTheme.colors.border}15`
+                        }}
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl opacity-20"
+                          style={{
+                            background: `radial-gradient(circle, ${customTheme.colors.primary}, transparent)`
+                          }}
+                        />
+                        
+                        <div className="relative">
+                          <div className="flex items-center space-x-reverse space-x-3 mb-6">
+                            <div 
+                              className="w-8 h-8 rounded-xl flex items-center justify-center"
+                              style={{
+                                background: `linear-gradient(135deg, ${customTheme.colors.primary}, ${customTheme.colors.accent})`,
+                                boxShadow: `0 4px 16px ${customTheme.colors.primary}40`
+                              }}
+                            >
+                              <span className="text-white text-sm">🎨</span>
+                            </div>
+                            <div>
+                              <h3 className={`text-lg font-black tracking-tight ${
+                                theme === 'light' ? 'text-gray-900' : 'text-gray-50'
+                              }`}>
+                                الإعدادات المسبقة
+                              </h3>
+                              <p className={`text-sm opacity-70 ${
+                                theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                              }`}>
+                                اختر شكلاً جاهزاً مع إعدادات متكاملة
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <PresetSelector />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {activeSection === 'themes' && (
                     <div className="space-y-6">
                       {/* Predefined Themes */}
@@ -1181,7 +1204,7 @@ export function SettingsButton() {
                                 صور للتركيز
                               </h5>
                               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                {BACKGROUNDS.filter(bg => ['focus1', 'focus2', 'focus3', 'focus4', 'focus5'].includes(bg.id)).map((background) => (
+                                {BACKGROUNDS.filter(bg => ['focus1', 'focus2', 'focus3', 'focus4', 'focus5', 'focus6', 'focus7', 'focus8'].includes(bg.id)).map((background) => (
                                   <button
                                     key={background.id}
                                     onClick={() => handleBackgroundSelect(background.id)}
