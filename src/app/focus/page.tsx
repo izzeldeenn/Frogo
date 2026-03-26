@@ -12,11 +12,39 @@ import { FullscreenProvider } from '@/contexts/FullscreenContext';
 import { CustomThemeProvider } from '@/contexts/CustomThemeContext';
 import { useCustomThemeClasses } from '@/hooks/useCustomThemeClasses';
 import { useUser } from '@/contexts/UserContext';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { TimerIndicatorProvider } from '@/contexts/TimerIndicatorContext';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { RankingDisplay } from '@/components/RankingDisplay';
+
+// Motivational quotes
+const MOTIVATIONAL_QUOTES = {
+  ar: [
+    "النجاح يبدأ بالخطوة الأولى",
+    "استمر في التقدم، كل خطوة مهمة",
+    "التركيز هو مفتاح الإنجاز",
+    "الأوقات الثمينة تولد النتائج العظيمة",
+    "اجعل كل لحظة تحسب",
+    "القوة تأتي من الاستمرارية",
+    "التميز يبدأ من الداخل",
+    "لا تؤجل عمل اليوم إلى الغد",
+    "الإصرار يصنع المستحيل",
+    "كل يوم هو فرصة جديدة"
+  ],
+  en: [
+    "Success begins with the first step",
+    "Keep progressing, every step matters",
+    "Focus is the key to achievement",
+    "Precious time creates great results",
+    "Make every moment count",
+    "Strength comes from consistency",
+    "Excellence starts from within",
+    "Don't postpone today's work until tomorrow",
+    "Persistence makes the impossible possible",
+    "Every day is a new opportunity"
+  ]
+};
 
 // Helper function to get background properties
 const getBackgroundStyles = (backgroundId: string) => {
@@ -73,6 +101,7 @@ function HomeContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [studyStreak, setStudyStreak] = useState(0);
   const [wakeLock, setWakeLock] = useState<any>(null);
+  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
 
   // Calculate study streak based on user activity (matching ActivityGraph logic)
   const calculateStudyStreak = () => {
@@ -277,6 +306,24 @@ function HomeContent() {
     };
   }, [setTimerActive]);
 
+  // Motivational quote rotation
+  useEffect(() => {
+    // Rotate quotes every hour (3600000 ms)
+    const rotateQuote = () => {
+      const quotes = MOTIVATIONAL_QUOTES[language as keyof typeof MOTIVATIONAL_QUOTES];
+      setCurrentQuoteIndex(prev => (prev + 1) % quotes.length);
+    };
+
+    // Initial quote
+    const quotes = MOTIVATIONAL_QUOTES[language as keyof typeof MOTIVATIONAL_QUOTES];
+    setCurrentQuoteIndex(Math.floor(Math.random() * quotes.length));
+
+    // Set up rotation interval
+    const interval = setInterval(rotateQuote, 3600000); // Every hour
+
+    return () => clearInterval(interval);
+  }, [language]);
+
   return (
     <>
       <div className={`flex h-screen overflow-hidden ${
@@ -291,23 +338,31 @@ function HomeContent() {
           {/* Top Bar with Logo and Social */}
           <div className="absolute top-0 left-0 right-0 z-40 p-6 flex justify-between items-center">
             <Logo />
-            <div className="flex items-center space-x-4">
-              <a
-                href="/social"
-                className="px-4 py-2 rounded-lg font-medium text-sm transition-colors"
-                style={{
-                  backgroundColor: customTheme.colors.primary,
-                  color: '#ffffff'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = customTheme.colors.accent;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = customTheme.colors.primary;
+            <div className="flex flex-col items-center space-y-2">
+              <div 
+                className="text-2xl transition-all duration-300 max-w-lg text-center"
+                style={{ 
+                  fontFamily: "'ADLaM Display', sans-serif",
+                  color: theme === 'light' ? '#1f2937' : '#f3f4f6',
+                  textShadow: theme === 'light' ? '0 2px 4px rgba(0,0,0,0.1)' : '0 2px 4px rgba(255,255,255,0.1)',
+                  fontWeight: 400
                 }}
               >
-                {language === 'ar' ? 'التواصل' : 'Social'}
-              </a>
+                "{MOTIVATIONAL_QUOTES[language as keyof typeof MOTIVATIONAL_QUOTES][currentQuoteIndex]}"
+              </div>
+              {currentQuoteIndex < MOTIVATIONAL_QUOTES[language as keyof typeof MOTIVATIONAL_QUOTES].length - 1 && (
+                <div 
+                  className="text-lg transition-all duration-300 max-w-lg text-center opacity-75"
+                  style={{ 
+                    fontFamily: "'ADLaM Display', sans-serif",
+                    color: theme === 'light' ? '#4b5563' : '#d1d5db',
+                    textShadow: theme === 'light' ? '0 1px 2px rgba(0,0,0,0.05)' : '0 1px 2px rgba(255,255,255,0.05)',
+                    fontWeight: 400
+                  }}
+                >
+                  "{MOTIVATIONAL_QUOTES[language as keyof typeof MOTIVATIONAL_QUOTES][(currentQuoteIndex + 1) % MOTIVATIONAL_QUOTES[language as keyof typeof MOTIVATIONAL_QUOTES].length]}"
+                </div>
+              )}
             </div>
           </div>
 
@@ -332,17 +387,31 @@ function HomeContent() {
             }}
           >
             <Logo />
-            <div className="flex items-center space-x-1 space-x-reverse">
-              <a
-                href="/social"
-                className="px-3 py-2 rounded-lg font-medium text-sm transition-colors whitespace-nowrap"
-                style={{
-                  backgroundColor: customTheme.colors.primary,
-                  color: '#ffffff'
+            <div className="flex flex-col items-center space-y-1 space-x-reverse">
+              <div 
+                className="text-base transition-all duration-300 max-w-[200px] text-center"
+                style={{ 
+                  fontFamily: "'ADLaM Display', sans-serif",
+                  color: theme === 'light' ? '#1f2937' : '#f3f4f6',
+                  textShadow: theme === 'light' ? '0 1px 2px rgba(0,0,0,0.1)' : '0 1px 2px rgba(255,255,255,0.1)',
+                  fontWeight: 400
                 }}
               >
-                {language === 'ar' ? 'التواصل' : 'Social'}
-              </a>
+                "{MOTIVATIONAL_QUOTES[language as keyof typeof MOTIVATIONAL_QUOTES][currentQuoteIndex]}"
+              </div>
+              {currentQuoteIndex < MOTIVATIONAL_QUOTES[language as keyof typeof MOTIVATIONAL_QUOTES].length - 1 && (
+                <div 
+                  className="text-xs transition-all duration-300 max-w-[200px] text-center opacity-75"
+                  style={{ 
+                    fontFamily: "'ADLaM Display', sans-serif",
+                    color: theme === 'light' ? '#4b5563' : '#d1d5db',
+                    textShadow: theme === 'light' ? '0 1px 1px rgba(0,0,0,0.05)' : '0 1px 1px rgba(255,255,255,0.05)',
+                    fontWeight: 400
+                  }}
+                >
+                  "{MOTIVATIONAL_QUOTES[language as keyof typeof MOTIVATIONAL_QUOTES][(currentQuoteIndex + 1) % MOTIVATIONAL_QUOTES[language as keyof typeof MOTIVATIONAL_QUOTES].length]}"
+                </div>
+              )}
               <SettingsMobileButton />
             </div>
           </div>

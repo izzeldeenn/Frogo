@@ -15,11 +15,9 @@ import { PomodoroTimer } from './PomodoroTimer';
 import { CountdownTimer } from './CountdownTimer';
 import { YouTubeTimer } from './YouTubeTimer';
 import { UserActivityDashboard } from './UserActivityDashboard';
-import FriendshipManager from './FriendshipManager';
-import MessagingSystem from './MessagingSystem';
 import { PDFStudyTimer } from './PDFStudyTimer';
 
-type TimerType = 'stopwatch' | 'pomodoro' | 'countdown' | 'youtube' | 'dashboard' | 'friends' | 'messages' | 'pdf';
+type TimerType = 'stopwatch' | 'pomodoro' | 'countdown' | 'youtube' | 'dashboard' | 'pdf';
 
 export function ServiceSelector() {
   const { theme } = useTheme();
@@ -27,8 +25,6 @@ export function ServiceSelector() {
   const customTheme = useCustomThemeClasses();
   const { getCurrentUser } = useUser();
   const [activeTimer, setActiveTimer] = useState<TimerType>('stopwatch');
-  const [selectedFriendForMessaging, setSelectedFriendForMessaging] = useState<string | null>(null);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [notes, setNotes] = useState<string>('');
   
@@ -40,16 +36,7 @@ export function ServiceSelector() {
   const [canScrollMobile, setCanScrollMobile] = useState({ left: false, right: false });
   const [canScrollDesktop, setCanScrollDesktop] = useState({ up: false, down: false });
 
-  const handleSwitchToMessaging = (friendId: string) => {
-    console.log('🔍 ServiceSelector - handleSwitchToMessaging called with friendId:', friendId);
-    setSelectedFriendForMessaging(friendId);
-    setActiveTimer('messages');
-    console.log('🔍 ServiceSelector - Set activeTimer to messages, friendId:', friendId);
-    
-    // Reset unread count when opening messages
-    setUnreadCount(0);
-  };
-
+  
   const renderTimer = () => {
     switch (activeTimer) {
       case 'stopwatch':
@@ -62,10 +49,6 @@ export function ServiceSelector() {
         return <YouTubeTimer />;
       case 'dashboard':
         return <UserActivityDashboard />;
-      case 'friends':
-        return <FriendshipManager onSwitchToMessaging={handleSwitchToMessaging} />;
-      case 'messages':
-        return <MessagingSystem selectedFriendId={selectedFriendForMessaging} />;
       case 'pdf':
         return <PDFStudyTimer />;
       default:
@@ -73,15 +56,13 @@ export function ServiceSelector() {
     }
   };
 
-  // Timer buttons array - main timers only
+  // Timer buttons array - focus timers only
   const timerButtons = [
     { id: 'stopwatch', type: 'stopwatch' as TimerType, label: t.stopwatch, icon: '⏱️' },
     { id: 'pomodoro', type: 'pomodoro' as TimerType, label: t.pomodoro, icon: '🍅' },
     { id: 'countdown', type: 'countdown' as TimerType, label: t.countdown, icon: '⏳' },
     { id: 'youtube', type: 'youtube' as TimerType, label: t.youtube, icon: '🎬' },
     { id: 'dashboard', type: 'dashboard' as TimerType, label: t.rank === 'ترتيب' ? 'لوحة التحكم' : 'Dashboard', icon: '📈' },
-    { id: 'friends', type: 'friends' as TimerType, label: t.rank === 'ترتيب' ? 'الأصدقاء' : 'Friends', icon: '👥' },
-    { id: 'messages', type: 'messages' as TimerType, label: t.rank === 'ترتيب' ? 'الرسائل' : 'Messages', icon: '💬' },
     { id: 'pdf', type: 'pdf' as TimerType, label: t.rank === 'ترتيب' ? 'دراسة PDF' : 'PDF Study', icon: '📚' }
   ];
 
@@ -194,116 +175,8 @@ export function ServiceSelector() {
       window.removeEventListener('stickyNotePublished', handleStickyNotePublished as EventListener);
     };
   }, []);
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      const currentUser = getCurrentUser();
-      if (!currentUser) {
-        console.log('🔍 fetchUnreadCount - No current user');
-        return;
-      }
-      
-      try {
-        console.log('🔍 fetchUnreadCount - Current user:', currentUser);
-        
-        // Use UUID (id) for database operations, fallback to accountId only if id is not available
-        // But prefer UUID since database expects UUID format for foreign keys
-        const userId = currentUser.id || currentUser.accountId;
-        console.log('🔍 fetchUnreadCount - Extracted user ID:', userId, '(type:', userId === currentUser.id ? 'UUID' : 'accountId', ')');
-        
-        if (!userId) {
-          console.error('❌ No valid user ID found');
-          setUnreadCount(0);
-          return;
-        }
-        
-        console.log('🔍 fetchUnreadCount - messageDB:', messageDB);
-        console.log('🔍 fetchUnreadCount - messageDB.getUnreadCount:', messageDB.getUnreadCount);
-        
-        if (typeof messageDB.getUnreadCount === 'function') {
-          const count = await messageDB.getUnreadCount(userId);
-          console.log('🔍 fetchUnreadCount - Received count:', count);
-          setUnreadCount(count);
-        } else {
-          console.error('❌ getUnreadCount is not a function on messageDB');
-          setUnreadCount(0);
-        }
-      } catch (error) {
-        console.error('❌ Error in fetchUnreadCount:', error);
-        console.error('❌ Error details:', JSON.stringify(error, null, 2));
-        setUnreadCount(0);
-      }
-    };
 
-    fetchUnreadCount();
-    
-    // Update count every 30 seconds as fallback
-    const interval = setInterval(fetchUnreadCount, 30000);
-    
-    return () => clearInterval(interval);
-  }, [getCurrentUser]);
-
-  // Realtime subscription for new messages
-  useEffect(() => {
-    const currentUser = getCurrentUser();
-    if (!currentUser) return;
-
-    const userId = currentUser.id || currentUser.accountId;
-    if (!userId) return;
-
-    console.log('🔍 Setting up realtime subscription for unread count...');
-
-    const subscription = supabase
-      .channel('unread-count')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages'
-        },
-        (payload) => {
-          console.log('🔍 New message received:', payload);
-          
-          const newMessage = payload.new as any;
-          
-          // Check if this message is for the current user
-          if (newMessage.receiver_id === userId && !newMessage.read_at) {
-            console.log('🔍 New unread message for current user');
-            setUnreadCount(prev => prev + 1);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages'
-        },
-        (payload) => {
-          console.log('🔍 Message updated:', payload);
-          
-          const updatedMessage = payload.new as any;
-          
-          // Check if this message was read and was for the current user
-          if (updatedMessage.receiver_id === userId && 
-              updatedMessage.read_at && 
-              !payload.old.read_at) {
-            console.log('🔍 Message marked as read, updating count');
-            setUnreadCount(prev => Math.max(0, prev - 1));
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('🔍 Unread count subscription status:', status);
-      });
-
-    return () => {
-      console.log('🔍 Unsubscribing from unread count changes');
-      subscription.unsubscribe();
-    };
-  }, [getCurrentUser]);
-
+  
   return (
     <div className="w-full h-full md:h-screen flex flex-col overflow-hidden">
       {/* Active Timer - Scrollable Container */}
@@ -394,17 +267,7 @@ export function ServiceSelector() {
                     theme === 'light' ? 'bg-blue-500' : 'bg-blue-400'
                   } border-2 border-white shadow-sm`}></div>
                 )}
-                {/* Unread Count Badge - More visible */}
-                {button.type === 'messages' && unreadCount > 0 && (
-                  <div className={`absolute -top-1 -right-1 min-w-[18px] h-5 text-xs rounded-full flex items-center justify-center px-1.5 font-bold border-2 shadow-sm ${
-                    theme === 'light' 
-                      ? 'bg-red-500 text-white border-white' 
-                      : 'bg-red-600 text-white border-gray-900'
-                  }`}>
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </div>
-                )}
-              </button>
+                              </button>
             ))}
           </div>
           
