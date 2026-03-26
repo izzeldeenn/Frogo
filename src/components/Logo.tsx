@@ -11,11 +11,11 @@ export function Logo() {
         <img 
           src="/mr_frogo.png" 
           alt="Mr Frogo" 
-          className="w-14 h-14 object-contain"
+          className="w-20 h-20 object-contain"
         />
         <div className="flex flex-col items-center" style={{ color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
-          <div className="text-2xl font-bold tracking-tight">
-            <span className="inline-block font-black text-white">
+          <div className="text-4xl font-bold tracking-tight">
+            <span className="inline-block font-black text-white" style={{ fontFamily: "'ADLaM Display', sans-serif" }}>
               Frogo
             </span>
           </div>

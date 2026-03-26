@@ -65,6 +65,7 @@ const SETTINGS_SECTIONS = [
   { id: 'rankings', name: 'عرض الترتيب', icon: '🏆' },
   { id: 'timer', name: 'التايمر', icon: '⏱️' },
   { id: 'countdown', name: 'العد التنازلي', icon: '⏳' },
+  { id: 'pomodoro', name: 'بومودورو', icon: '🍅' },
   { id: 'account', name: 'الحساب', icon: '🔐' },
 ];
 
@@ -118,6 +119,13 @@ export function SettingsButton() {
   const [countdownFont, setCountdownFont] = useState('font-mono');
   const [countdownDesign, setCountdownDesign] = useState('minimal');
   const [countdownSize, setCountdownSize] = useState('text-4xl');
+
+  // Pomodoro timer settings
+  const [pomodoroColor, setPomodoroColor] = useState('#ffffff');
+  const [pomodoroFont, setPomodoroFont] = useState('font-mono');
+  const [pomodoroDesign, setPomodoroDesign] = useState('minimal');
+  const [pomodoroSize, setPomodoroSize] = useState('text-4xl');
+  const [pomodoroCompletedIcon, setPomodoroCompletedIcon] = useState('star');
 
   // Ranking display mode
   const [rankingDisplayMode, setRankingDisplayMode] = useState(() => {
@@ -233,9 +241,20 @@ export function SettingsButton() {
     };
     localStorage.setItem('countdown_timer_settings', JSON.stringify(countdownSettings));
     
+    // Save pomodoro timer settings to localStorage
+    const pomodoroSettings = {
+      color: pomodoroColor,
+      font: pomodoroFont,
+      design: pomodoroDesign,
+      size: pomodoroSize,
+      completedIcon: pomodoroCompletedIcon
+    };
+    localStorage.setItem('pomodoro_timer_settings', JSON.stringify(pomodoroSettings));
+    
     // Dispatch custom events to notify timer components
     window.dispatchEvent(new CustomEvent('timerSettingsChanged', { detail: timerSettings }));
     window.dispatchEvent(new CustomEvent('countdownTimerSettingsChanged', { detail: countdownSettings }));
+    window.dispatchEvent(new CustomEvent('pomodoroTimerSettingsChanged', { detail: pomodoroSettings }));
     
     setShowSettings(false);
   };
@@ -279,6 +298,21 @@ export function SettingsButton() {
           setCountdownSize(settings.size || 'text-4xl');
         } catch (error) {
           console.error('Failed to load countdown timer settings:', error);
+        }
+      }
+
+      // Load pomodoro timer settings from localStorage
+      const savedPomodoroSettings = localStorage.getItem('pomodoro_timer_settings');
+      if (savedPomodoroSettings) {
+        try {
+          const settings = JSON.parse(savedPomodoroSettings);
+          setPomodoroColor(settings.color || '#ffffff');
+          setPomodoroFont(settings.font || 'font-mono');
+          setPomodoroDesign(settings.design || 'minimal');
+          setPomodoroSize(settings.size || 'text-4xl');
+          setPomodoroCompletedIcon(settings.completedIcon || 'star');
+        } catch (error) {
+          console.error('Failed to load pomodoro timer settings:', error);
         }
       }
     }
@@ -459,6 +493,7 @@ export function SettingsButton() {
                           {activeSection === 'rankings' && 'اختر طريقة عرض الترتيب التي تناسبك'}
                           {activeSection === 'timer' && 'تخصيص شكل وألوان المؤقت'}
                           {activeSection === 'countdown' && 'إعداد العد التنازلي'}
+                          {activeSection === 'pomodoro' && 'تخصيص مؤقت بومودورو'}
                           {activeSection === 'account' && 'إعدادات الحساب والأمان'}
                         </div>
                       </div>
@@ -1503,7 +1538,7 @@ export function SettingsButton() {
                             {/* Timer Color */}
                             <div>
                               <label className={`block text-sm font-medium mb-2 ${
-                                theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+                                theme === 'light' ? 'text-black' : 'text-gray-300'
                               }`}>
                                 لون التايمر
                               </label>
@@ -1534,7 +1569,7 @@ export function SettingsButton() {
                             {/* Timer Font */}
                             <div>
                               <label className={`block text-sm font-medium mb-2 ${
-                                theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+                                theme === 'light' ? 'text-black' : 'text-gray-300'
                               }`}>
                                 نوع الخط
                               </label>
@@ -1559,7 +1594,7 @@ export function SettingsButton() {
                             {/* Timer Design */}
                             <div>
                               <label className={`block text-sm font-medium mb-2 ${
-                                theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+                                theme === 'light' ? 'text-black' : 'text-gray-300'
                               }`}>
                                 التصميم
                               </label>
@@ -1594,7 +1629,7 @@ export function SettingsButton() {
                             {/* Timer Size */}
                             <div>
                               <label className={`block text-sm font-medium mb-2 ${
-                                theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+                                theme === 'light' ? 'text-black' : 'text-gray-300'
                               }`}>
                                 الحجم
                               </label>
@@ -1691,7 +1726,7 @@ export function SettingsButton() {
                             {/* Countdown Timer Color */}
                             <div>
                               <label className={`block text-sm font-medium mb-2 ${
-                                theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+                                theme === 'light' ? 'text-black' : 'text-gray-300'
                               }`}>
                                 لون العد التنازلي
                               </label>
@@ -1722,7 +1757,7 @@ export function SettingsButton() {
                             {/* Countdown Timer Font */}
                             <div>
                               <label className={`block text-sm font-medium mb-2 ${
-                                theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+                                theme === 'light' ? 'text-black' : 'text-gray-300'
                               }`}>
                                 نوع الخط
                               </label>
@@ -1747,7 +1782,7 @@ export function SettingsButton() {
                             {/* Countdown Timer Design */}
                             <div>
                               <label className={`block text-sm font-medium mb-2 ${
-                                theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+                                theme === 'light' ? 'text-black' : 'text-gray-300'
                               }`}>
                                 التصميم
                               </label>
@@ -1782,7 +1817,7 @@ export function SettingsButton() {
                             {/* Countdown Timer Size */}
                             <div>
                               <label className={`block text-sm font-medium mb-2 ${
-                                theme === 'light' ? 'text-gray-700' : 'text-gray-300'
+                                theme === 'light' ? 'text-black' : 'text-gray-300'
                               }`}>
                                 الحجم
                               </label>
@@ -1832,6 +1867,214 @@ export function SettingsButton() {
                                   theme === 'light' ? 'text-gray-500' : 'text-gray-400'
                                 }`}>
                                   معاينة العد التنازلي
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeSection === 'pomodoro' && (
+                    <div className="space-y-6">
+                      <div 
+                        className="relative overflow-hidden rounded-3xl p-6 backdrop-blur-xl"
+                        style={{
+                          background: `linear-gradient(135deg, ${customTheme.colors.surface}60, ${customTheme.colors.background}20)`,
+                          border: `1px solid ${customTheme.colors.border}20`,
+                          boxShadow: `0 8px 32px ${customTheme.colors.border}15`
+                        }}
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl opacity-20"
+                          style={{
+                            background: `radial-gradient(circle, ${customTheme.colors.primary}, transparent)`
+                          }}
+                        />
+                        
+                        <div className="relative">
+                          <div className="flex items-center space-x-reverse space-x-3 mb-6">
+                            <div 
+                              className="w-8 h-8 rounded-xl flex items-center justify-center"
+                              style={{
+                                background: `linear-gradient(135deg, ${customTheme.colors.primary}, ${customTheme.colors.accent})`,
+                                boxShadow: `0 4px 16px ${customTheme.colors.primary}40`
+                              }}
+                            >
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                            <h3 className={`text-lg font-semibold ${
+                              theme === 'light' ? 'text-gray-900' : 'text-white'
+                            }`}>
+                              إعدادات مؤقت بومودورو
+                            </h3>
+                          </div>
+
+                          <div className="space-y-4">
+                            {/* Pomodoro Timer Color */}
+                            <div>
+                              <label className={`block text-sm font-medium mb-2 ${
+                                theme === 'light' ? 'text-black' : 'text-gray-300'
+                              }`}>
+                                لون المؤقت
+                              </label>
+                              <div className="flex items-center space-x-reverse space-x-2">
+                                <input
+                                  type="color"
+                                  value={pomodoroColor}
+                                  onChange={(e) => setPomodoroColor(e.target.value)}
+                                  className="w-12 h-12 rounded-lg border-2 border-gray-300 cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  value={pomodoroColor}
+                                  onChange={(e) => setPomodoroColor(e.target.value)}
+                                  className={`flex-1 px-3 py-2 border-2 rounded-lg focus:outline-none ${
+                                    theme === 'light'
+                                      ? 'border-gray-300 bg-white text-black focus:border-blue-500'
+                                      : 'border-gray-600 bg-black text-white focus:border-blue-400'
+                                  }`}
+                                  placeholder="#ffffff"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Pomodoro Timer Font */}
+                            <div>
+                              <label className={`block text-sm font-medium mb-2 ${
+                                theme === 'light' ? 'text-black' : 'text-gray-300'
+                              }`}>
+                                خط المؤقت
+                              </label>
+                              <select
+                                value={pomodoroFont}
+                                onChange={(e) => setPomodoroFont(e.target.value)}
+                                className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none ${
+                                  theme === 'light'
+                                    ? 'border-gray-300 bg-white text-black focus:border-blue-500'
+                                    : 'border-gray-600 bg-black text-white focus:border-blue-400'
+                                }`}
+                              >
+                                <option value="font-mono">Mono</option>
+                                <option value="font-sans">Sans Serif</option>
+                                <option value="font-serif">Serif</option>
+                              </select>
+                            </div>
+
+                            {/* Pomodoro Timer Design */}
+                            <div>
+                              <label className={`block text-sm font-medium mb-2 ${
+                                theme === 'light' ? 'text-black' : 'text-gray-300'
+                              }`}>
+                                تصميم المؤقت
+                              </label>
+                              <div className="grid grid-cols-2 gap-2">
+                                {['minimal', 'modern', 'classic', 'digital'].map((design) => (
+                                  <button
+                                    key={design}
+                                    onClick={() => setPomodoroDesign(design)}
+                                    className={`px-3 py-2 rounded-lg border-2 transition-all ${
+                                      pomodoroDesign === design
+                                        ? theme === 'light'
+                                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                          : 'border-blue-400 bg-blue-900/30 text-blue-300'
+                                        : theme === 'light'
+                                          ? 'border-gray-400 bg-white text-black hover:border-gray-500 hover:bg-gray-50'
+                                          : 'border-gray-600 hover:border-gray-500'
+                                    }`}
+                                  >
+                                    {design === 'minimal' && 'بسيط'}
+                                    {design === 'modern' && 'عصري'}
+                                    {design === 'classic' && 'كلاسيكي'}
+                                    {design === 'digital' && 'رقمي'}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Pomodoro Timer Size */}
+                            <div>
+                              <label className={`block text-sm font-medium mb-2 ${
+                                theme === 'light' ? 'text-black' : 'text-gray-300'
+                              }`}>
+                                حجم المؤقت
+                              </label>
+                              <div className="grid grid-cols-2 gap-2">
+                                {['text-2xl', 'text-4xl', 'text-6xl', 'text-8xl'].map((size) => (
+                                  <button
+                                    key={size}
+                                    onClick={() => setPomodoroSize(size)}
+                                    className={`px-3 py-2 rounded-lg border-2 transition-all ${
+                                      pomodoroSize === size
+                                        ? theme === 'light'
+                                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                          : 'border-blue-400 bg-blue-900/30 text-blue-300'
+                                        : theme === 'light'
+                                          ? 'border-gray-400 bg-white text-black hover:border-gray-500 hover:bg-gray-50'
+                                          : 'border-gray-600 hover:border-gray-500'
+                                    }`}
+                                  >
+                                    {size === 'text-2xl' && 'صغير'}
+                                    {size === 'text-4xl' && 'متوسط'}
+                                    {size === 'text-6xl' && 'كبير'}
+                                    {size === 'text-8xl' && 'كبير جداً'}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Completed Sessions Icon */}
+                            <div>
+                              <label className={`block text-sm font-medium mb-2 ${
+                                theme === 'light' ? 'text-black' : 'text-gray-300'
+                              }`}>
+                                شكل الجلسات المكتملة
+                              </label>
+                              <div className="grid grid-cols-3 gap-2">
+                                {[
+                                  { id: 'star', name: 'نجمة', icon: '⭐' },
+                                  { id: 'dot', name: 'نقطة', icon: '🔵' },
+                                  { id: 'heart', name: 'قلب', icon: '❤️' }
+                                ].map((icon) => (
+                                  <button
+                                    key={icon.id}
+                                    onClick={() => setPomodoroCompletedIcon(icon.id)}
+                                    className={`px-3 py-2 rounded-lg border-2 transition-all flex flex-col items-center gap-1 ${
+                                      pomodoroCompletedIcon === icon.id
+                                        ? theme === 'light'
+                                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                          : 'border-blue-400 bg-blue-900/30 text-blue-300'
+                                        : theme === 'light'
+                                          ? 'border-gray-400 bg-white text-black hover:border-gray-500 hover:bg-gray-50'
+                                          : 'border-gray-600 hover:border-gray-500'
+                                    }`}
+                                  >
+                                    <span className="text-xl">{icon.icon}</span>
+                                    <span className="text-xs">{icon.name}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Preview */}
+                            <div className="mt-6 p-4 rounded-xl"
+                              style={{
+                                backgroundColor: customTheme.colors.surface + '20',
+                                border: `1px solid ${customTheme.colors.border}`
+                              }}
+                            >
+                              <div className="text-center">
+                                <div className={`text-center ${pomodoroFont} ${pomodoroSize}`}
+                                  style={{ color: pomodoroColor }}
+                                >
+                                  25:00
+                                </div>
+                                <p className={`text-xs mt-2 ${
+                                  theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+                                }`}>
+                                  معاينة بومودورو
                                 </p>
                               </div>
                             </div>

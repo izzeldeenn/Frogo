@@ -100,6 +100,7 @@ export function PDFStudyTimer({ onClose }: PDFStudyTimerProps) {
     };
   }, [isRunning]);
 
+  
   // Timer functions
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -187,28 +188,7 @@ export function PDFStudyTimer({ onClose }: PDFStudyTimerProps) {
     <div className={`w-full h-full flex flex-col ${
       theme === 'light' ? 'bg-white' : 'bg-gray-900'
     }`}>
-      {/* Header */}
-      <div className={`p-4 border-b flex items-center justify-between ${
-        theme === 'light' ? 'border-gray-200' : 'border-gray-700'
-      }`}>
-        <h2 className={`text-xl font-bold ${
-          theme === 'light' ? 'text-gray-800' : 'text-gray-200'
-        }`}>
-          {t.rank === 'ترتيب' ? 'مؤقت دراسة PDF' : 'PDF Study Timer'}
-        </h2>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className={`p-2 rounded-lg transition-colors ${
-              theme === 'light' ? 'hover:bg-gray-100 text-gray-600' : 'hover:bg-gray-800 text-gray-400'
-            }`}
-          >
-            ✕
-          </button>
-        )}
-      </div>
-
-      <div className="flex-1 flex flex-col items-center justify-center p-8">
+      <div className="flex-1 flex flex-col items-center justify-center">
         {!pdfUrl ? (
           /* File Upload Section */
           <div className="w-full max-w-md">
@@ -259,82 +239,8 @@ export function PDFStudyTimer({ onClose }: PDFStudyTimerProps) {
         ) : (
           /* PDF Viewer Section - Full Screen */
           <div className="w-full h-full relative">
-            {/* Close PDF Button */}
-            <button
-              onClick={() => {
-                setPdfUrl('');
-                setPdfTitle('');
-                setError('');
-                // Clear saved PDF from localStorage
-                if (typeof window !== 'undefined') {
-                  localStorage.removeItem('pdf_study_file');
-                }
-              }}
-              className={`absolute top-4 right-4 z-10 p-2 rounded-lg shadow-lg border transition-colors ${
-                theme === 'light' 
-                  ? 'bg-white/95 border-gray-200 hover:bg-red-50 text-red-600' 
-                  : 'bg-gray-800/95 border-gray-600 hover:bg-red-900/20 text-red-400'
-              }`}
-              title={t.rank === 'ترتيب' ? 'إغلاق واختر ملف آخر' : 'Close and choose another file'}
-            >
-              ✕
-            </button>
-
-            {/* PDF Display - Full Screen */}
-            <div className="w-full h-full">
-              <iframe
-                src={pdfUrl}
-                className="w-full h-full border-0"
-                title={pdfTitle}
-              />
-            </div>
-
-            {/* Floating Timer - Small Corner Widget */}
-            <div className="absolute bottom-4 right-4 z-10">
-              <div className={`p-2 rounded-lg shadow-lg border backdrop-blur-sm ${
-                theme === 'light' 
-                  ? 'bg-white/95 border-gray-200 shadow-xl' 
-                  : 'bg-gray-800/95 border-gray-600 shadow-2xl'
-              }`}>
-                <div className="flex items-center space-x-2">
-                  <span className={`text-xs font-medium ${
-                    theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                  }`}>
-                    {t.rank === 'ترتيب' ? 'مؤقت' : 'Timer'}
-                  </span>
-                  <div className="flex items-center space-x-1">
-                    <span className={`text-xs font-mono ${
-                      theme === 'light' ? 'text-gray-700' : 'text-gray-300'
-                    }`}>
-                      {formatTime(time)}
-                    </span>
-                    <button
-                      onClick={isRunning ? handleStop : handleStart}
-                      className={`w-5 h-5 rounded-full flex items-center justify-center text-xs transition-all duration-200 hover:scale-110 ${
-                        theme === 'light'
-                          ? 'bg-blue-500 text-white hover:bg-blue-600'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
-                    >
-                      {isRunning ? '⏸' : '▶'}
-                    </button>
-                    <button
-                      onClick={handleReset}
-                      className={`w-5 h-5 rounded-full flex items-center justify-center text-xs transition-all duration-200 hover:scale-110 ${
-                        theme === 'light'
-                          ? 'bg-gray-500 text-white hover:bg-gray-600'
-                          : 'bg-gray-600 text-white hover:bg-gray-700'
-                      }`}
-                    >
-                      🔄
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* File Info - Top Bar */}
-            <div className={`absolute top-4 left-4 z-10 px-3 py-2 rounded-lg shadow-lg border ${
+            <div className={`absolute top-4 left-4 z-50 px-3 py-2 rounded-lg shadow-lg border ${
               theme === 'light' 
                 ? 'bg-white/90 border-gray-200 backdrop-blur-sm' 
                 : 'bg-gray-800/90 border-gray-600 backdrop-blur-sm'
@@ -347,29 +253,115 @@ export function PDFStudyTimer({ onClose }: PDFStudyTimerProps) {
                   }`}>
                     {pdfTitle}
                   </h3>
-                  <p className={`text-xs ${
-                    theme === 'light' ? 'text-gray-600' : 'text-gray-400'
-                  }`}>
-                    {t.rank === 'ترتيب' ? 'يتم القراءة من جهازك' : 'Reading from your device'}
-                  </p>
                 </div>
+                <button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = pdfUrl;
+                    link.download = `${pdfTitle}.pdf`;
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className={`ml-2 p-1 rounded transition-colors ${
+                    theme === 'light' 
+                      ? 'hover:bg-gray-100 text-gray-600' 
+                      : 'hover:bg-gray-700 text-gray-400'
+                  }`}
+                  title="فتح في نافذة جديدة"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setPdfUrl('');
-                  setPdfTitle('');
-                  setError('');
-                }}
-                className={`ml-3 p-1 rounded transition-colors ${
-                  theme === 'light' ? 'hover:bg-gray-100 text-gray-600' : 'hover:bg-gray-700 text-gray-400'
-                }`}
-                title={t.rank === 'ترتيب' ? 'إغلاق واختر ملف آخر' : 'Close and choose another file'}
-              >
-                ✕
-              </button>
             </div>
 
-                      </div>
+            {/* PDF Display - Full Screen with Native Browser */}
+            <div className="w-full h-full relative">
+              <iframe
+                src={pdfUrl}
+                className="w-full h-full border-0"
+                title={pdfTitle}
+              />
+            </div>
+
+            {/* Floating Timer - Modern Design */}
+            <div className="absolute bottom-4 right-4 z-50">
+              <div
+                className={`flex overflow-hidden rounded-lg divide-x mb-2 ${
+                  theme === 'light' 
+                    ? 'bg-white/90 border border-gray-200' 
+                    : 'bg-gray-900/90 border border-gray-700 divide-gray-700'
+                } rtl:flex-row-reverse`}
+              >
+                <button
+                  onClick={handleReset}
+                  className={`px-3 py-2 font-medium transition-colors duration-200 sm:px-4 ${
+                    theme === 'light'
+                      ? 'text-gray-600 hover:bg-gray-100'
+                      : 'text-gray-300 hover:bg-gray-800'
+                  }`}
+                >
+                  <svg
+                    className="w-4 h-4 sm:w-5 sm:h-5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                    ></path>
+                  </svg>
+                </button>
+
+                <button
+                  onClick={isRunning ? handleStop : handleStart}
+                  className={`px-3 py-2 font-medium transition-colors duration-200 sm:px-4 ${
+                    theme === 'light'
+                      ? 'text-gray-600 hover:bg-gray-100'
+                      : 'text-gray-300 hover:bg-gray-800'
+                  }`}
+                >
+                  <svg
+                    className="w-4 h-4 sm:w-5 sm:h-5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    {isRunning ? (
+                      <path
+                        d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9A2.25 2.25 0 015.25 16.5v-9z"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      ></path>
+                    ) : (
+                      <path
+                        d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      ></path>
+                    )}
+                  </svg>
+                </button>
+              </div>
+              
+              <div className={`text-2xl font-bold font-mono px-4 py-2 rounded-lg backdrop-blur-sm ${
+                theme === 'light' 
+                  ? 'text-white bg-black/50' 
+                  : 'text-black bg-white/50'
+              }`}>
+                {formatTime(time)}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -19,6 +19,15 @@ export function PomodoroTimer() {
   const { getCurrentUser, updateUserStudyTime, setTimerActive } = useUser();
   const { setTimerActive: setTimerActiveIndicator } = useTimerIndicator();
   const { showFullscreenPrompt, setShowFullscreenPrompt, requestFullscreen } = useFullscreen();
+  
+  // Timer settings from localStorage
+  const [timerSettings, setTimerSettings] = useState({
+    color: '#ffffff',
+    font: 'font-mono',
+    design: 'minimal',
+    size: 'text-4xl',
+    completedIcon: 'star' // star, dot, heart
+  });
   const [settings, setSettings] = useState<PomodoroSettings>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('pomodoroTimer_settings');
@@ -77,6 +86,68 @@ export function PomodoroTimer() {
   });
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const studyTimeRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load timer settings from localStorage and listen for changes
+  useEffect(() => {
+    // Load timer settings from localStorage
+    if (typeof window !== 'undefined') {
+      const savedSettings = localStorage.getItem('pomodoro_timer_settings');
+      if (savedSettings) {
+        try {
+          const settings = JSON.parse(savedSettings);
+          setTimerSettings(settings);
+        } catch (error) {
+          console.error('Failed to load pomodoro timer settings:', error);
+        }
+      }
+
+      // Listen for storage changes from other tabs
+      const handleStorageChange = (e: StorageEvent) => {
+        if (e.key === 'pomodoro_timer_settings' && e.newValue) {
+          try {
+            const settings = JSON.parse(e.newValue);
+            setTimerSettings(settings);
+          } catch (error) {
+            console.error('Failed to parse pomodoro timer settings:', error);
+          }
+        }
+      };
+
+      // Listen for custom event from settings
+      const handleCustomEvent = (e: CustomEvent) => {
+        setTimerSettings(e.detail);
+      };
+
+      // Listen for storage changes
+      window.addEventListener('storage', handleStorageChange);
+      window.addEventListener('pomodoroTimerSettingsChanged', handleCustomEvent as EventListener);
+
+      // Also check for direct localStorage changes (same tab)
+      const checkInterval = setInterval(() => {
+        const savedSettings = localStorage.getItem('pomodoro_timer_settings');
+        if (savedSettings) {
+          try {
+            const settings = JSON.parse(savedSettings);
+            setTimerSettings(prev => {
+              // Only update if actually different
+              if (JSON.stringify(prev) !== JSON.stringify(settings)) {
+                return settings;
+              }
+              return prev;
+            });
+          } catch (error) {
+            console.error('Failed to check pomodoro timer settings:', error);
+          }
+        }
+      }, 1000);
+
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('pomodoroTimerSettingsChanged', handleCustomEvent as EventListener);
+        clearInterval(checkInterval);
+      };
+    }
+  }, []);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
@@ -194,6 +265,96 @@ export function PomodoroTimer() {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  // Render completed sessions icons
+  const renderCompletedSessions = () => {
+    const icons = [];
+    const maxDisplay = 10; // Maximum icons to display
+    
+    for (let i = 0; i < Math.min(completedSessions, maxDisplay); i++) {
+      let icon = '';
+      switch (timerSettings.completedIcon) {
+        case 'star':
+          icon = '⭐';
+          break;
+        case 'dot':
+          icon = '🔵';
+          break;
+        case 'heart':
+          icon = '❤️';
+          break;
+        default:
+          icon = '⭐';
+      }
+      icons.push(
+        <span key={i} className="inline-block mx-1 text-lg">
+          {icon}
+        </span>
+      );
+    }
+    
+    // Add "+X" if there are more sessions than displayed
+    if (completedSessions > maxDisplay) {
+      icons.push(
+        <span key="more" className="inline-block mx-1 text-lg">
+          +{completedSessions - maxDisplay}
+        </span>
+      );
+    }
+    
+    return icons;
+  };
+
+  // Get design-specific styles
+  const getDesignStyles = () => {
+    switch (timerSettings.design) {
+      case 'minimal':
+        return {
+          background: 'transparent',
+          padding: '0',
+          border: 'none',
+          boxShadow: 'none',
+          letterSpacing: '0.05em'
+        };
+      case 'modern':
+        return {
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))',
+          padding: '20px 40px',
+          borderRadius: '20px',
+          border: '2px solid rgba(255,255,255,0.2)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+          letterSpacing: '0.1em'
+        };
+      case 'classic':
+        return {
+          background: 'rgba(0,0,0,0.3)',
+          padding: '16px 32px',
+          borderRadius: '8px',
+          border: '1px solid rgba(255,255,255,0.3)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+          fontFamily: 'Georgia, serif'
+        };
+      case 'digital':
+        return {
+          background: 'linear-gradient(135deg, #1a1a1a, #2d2d2d)',
+          padding: '24px 48px',
+          borderRadius: '12px',
+          border: '2px solid #333',
+          boxShadow: '0 0 20px rgba(0,255,255,0.3), inset 0 0 20px rgba(0,255,255,0.1)',
+          fontFamily: 'Courier New, monospace',
+          textShadow: '0 0 10px currentColor',
+          letterSpacing: '0.2em'
+        };
+      default:
+        return {
+          background: 'transparent',
+          padding: '0',
+          border: 'none',
+          boxShadow: 'none',
+          letterSpacing: '0.05em'
+        };
+    }
+  };
+
   const handleStart = async () => {
     // Check if fullscreen is active, if not show prompt
     if (!document.fullscreenElement) {
@@ -288,62 +449,130 @@ export function PomodoroTimer() {
             {getSessionLabel()}
           </h2>
         </div>
-        <p className={`mt-2 ${
+        <div className={`mt-2 ${
           theme === 'light' ? 'text-gray-600' : 'text-gray-400'
         }`}>
-          الجلسات المكتملة: {completedSessions}
-        </p>
+          <div className="flex items-center justify-center flex-wrap">
+            {renderCompletedSessions()}
+          </div>
+        </div>
       </div>
 
-      <h1 className={`text-7xl font-bold mb-8 font-mono ${
-        theme === 'light' ? 'text-black' : 'text-white'
-      }`}>
+      <h1 className={`${timerSettings.size} font-bold mb-8 ${timerSettings.font}`}
+        style={{ 
+          color: timerSettings.color,
+          ...getDesignStyles()
+        }}
+      >
         {formatTime(timeLeft)}
       </h1>
 
-      <div className="flex justify-center items-center space-x-4 space-x-reverse mb-6">
-        <button
-          onClick={handleStart}
-          disabled={isRunning}
-          className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all duration-200 hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50 ${
-            theme === 'light'
-              ? 'bg-black/10 text-black hover:bg-black/20'
-              : 'bg-white/10 text-white hover:bg-white/20'
-          }`}
+      <div className="flex justify-center mb-6">
+        <div
+          className={`flex overflow-hidden rounded-lg divide-x ${
+            theme === 'light' 
+              ? 'bg-white border border-gray-200' 
+              : 'bg-gray-900 border border-gray-700 divide-gray-700'
+          } rtl:flex-row-reverse`}
         >
-          ▶️
-        </button>
-        <button
-          onClick={handleStop}
-          disabled={!isRunning}
-          className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all duration-200 hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50 ${
-            theme === 'light'
-              ? 'bg-black/10 text-black hover:bg-black/20'
-              : 'bg-white/10 text-white hover:bg-white/20'
-          }`}
-        >
-          ⏸️
-        </button>
-        <button
-          onClick={handleReset}
-          className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all duration-200 hover:scale-110 ${
-            theme === 'light'
-              ? 'bg-black/10 text-black hover:bg-black/20'
-              : 'bg-white/10 text-white hover:bg-white/20'
-          }`}
-        >
-          🔄
-        </button>
-        <button
-          onClick={handleSkip}
-          className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all duration-200 hover:scale-110 ${
-            theme === 'light'
-              ? 'bg-black/10 text-black hover:bg-black/20'
-              : 'bg-white/10 text-white hover:bg-white/20'
-          }`}
-        >
-          ⏭️
-        </button>
+          <button
+            onClick={handleSkip}
+            className={`px-4 py-2 font-medium transition-colors duration-200 sm:px-6 ${
+              theme === 'light'
+                ? 'text-gray-600 hover:bg-gray-100'
+                : 'text-gray-300 hover:bg-gray-800'
+            }`}
+          >
+            <svg
+              className="w-5 h-5 sm:w-6 sm:h-6"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M11.25 4.5l-6.318 9.319a1.125 1.125 0 001.003 1.681H15.75a1.125 1.125 0 001.003-1.681L10.5 4.5a1.125 1.125 0 00-1.25 0z"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              ></path>
+            </svg>
+          </button>
+
+          <button
+            onClick={handleReset}
+            className={`px-4 py-2 font-medium transition-colors duration-200 sm:px-6 ${
+              theme === 'light'
+                ? 'text-gray-600 hover:bg-gray-100'
+                : 'text-gray-300 hover:bg-gray-800'
+            }`}
+          >
+            <svg
+              className="w-5 h-5 sm:w-6 sm:h-6"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              ></path>
+            </svg>
+          </button>
+
+          <button
+            onClick={handleStop}
+            disabled={!isRunning}
+            className={`px-4 py-2 font-medium transition-colors duration-200 sm:px-6 disabled:cursor-not-allowed disabled:opacity-50 ${
+              theme === 'light'
+                ? 'text-gray-600 hover:bg-gray-100 disabled:hover:bg-transparent'
+                : 'text-gray-300 hover:bg-gray-800 disabled:hover:bg-transparent'
+            }`}
+          >
+            <svg
+              className="w-5 h-5 sm:w-6 sm:h-6"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9A2.25 2.25 0 015.25 16.5v-9z"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              ></path>
+            </svg>
+          </button>
+
+          <button
+            onClick={handleStart}
+            disabled={isRunning}
+            className={`px-4 py-2 font-medium transition-colors duration-200 sm:px-6 disabled:cursor-not-allowed disabled:opacity-50 ${
+              theme === 'light'
+                ? 'text-gray-600 hover:bg-gray-100 disabled:hover:bg-transparent'
+                : 'text-gray-300 hover:bg-gray-800 disabled:hover:bg-transparent'
+            }`}
+          >
+            <svg
+              className="w-5 h-5 sm:w-6 sm:h-6"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              ></path>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <button

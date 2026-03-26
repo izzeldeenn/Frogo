@@ -234,69 +234,145 @@ export function YouTubeTimer() {
       )}
 
       {/* Floating Timer with Controls */}
-      <div className="absolute top-4 right-4 z-10">
-        <div className={`text-4xl font-bold font-mono px-4 py-2 rounded-lg backdrop-blur-sm mb-2 ${
+      <div className="absolute bottom-4 right-4 z-10">
+        {/* Control Buttons */}
+        {videoUrl && videoId && (
+          <div
+            className={`flex overflow-hidden rounded-lg divide-x mb-2 ${
+              theme === 'light' 
+                ? 'bg-white/90 border border-gray-200' 
+                : 'bg-gray-900/90 border border-gray-700 divide-gray-700'
+            } rtl:flex-row-reverse`}
+          >
+            <button
+              onClick={handleReset}
+              className={`px-3 py-2 font-medium transition-colors duration-200 sm:px-4 ${
+                theme === 'light'
+                  ? 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-300 hover:bg-gray-800'
+              }`}
+            >
+              <svg
+                className="w-4 h-4 sm:w-5 sm:h-5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                ></path>
+              </svg>
+            </button>
+
+            <button
+              onClick={handleStop}
+              disabled={!isRunning}
+              className={`px-3 py-2 font-medium transition-colors duration-200 sm:px-4 disabled:cursor-not-allowed disabled:opacity-50 ${
+                theme === 'light'
+                  ? 'text-gray-600 hover:bg-gray-100 disabled:hover:bg-transparent'
+                  : 'text-gray-300 hover:bg-gray-800 disabled:hover:bg-transparent'
+              }`}
+            >
+              <svg
+                className="w-4 h-4 sm:w-5 sm:h-5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9A2.25 2.25 0 015.25 16.5v-9z"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                ></path>
+              </svg>
+            </button>
+
+            <button
+              onClick={handleStart}
+              disabled={isRunning}
+              className={`px-3 py-2 font-medium transition-colors duration-200 sm:px-4 disabled:cursor-not-allowed disabled:opacity-50 ${
+                theme === 'light'
+                  ? 'text-gray-600 hover:bg-gray-100 disabled:hover:bg-transparent'
+                  : 'text-gray-300 hover:bg-gray-800 disabled:hover:bg-transparent'
+              }`}
+            >
+              <svg
+                className="w-4 h-4 sm:w-5 sm:h-5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        )}
+        
+        <div className={`text-4xl font-bold font-mono px-4 py-2 rounded-lg backdrop-blur-sm ${
           theme === 'light' 
             ? 'text-white bg-black/50' 
             : 'text-black bg-white/50'
         }`}>
           {formatTime(time)}
         </div>
-        
-        {/* Control Buttons */}
-        {videoUrl && videoId && (
-          <div className="flex space-x-2 space-x-reverse">
-            <button
-              onClick={handleStart}
-              disabled={isRunning}
-              className={`w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all duration-200 hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50 ${
-                theme === 'light'
-                  ? 'bg-black/10 text-black hover:bg-black/20'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              ▶️
-            </button>
-            <button
-              onClick={handleStop}
-              disabled={!isRunning}
-              className={`w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all duration-200 hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50 ${
-                theme === 'light'
-                  ? 'bg-black/10 text-black hover:bg-black/20'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              ⏸️
-            </button>
-            <button
-              onClick={handleReset}
-              className={`w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all duration-200 hover:scale-110 ${
-                theme === 'light'
-                  ? 'bg-black/10 text-black hover:bg-black/20'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              🔄
-            </button>
-          </div>
-        )}
       </div>
 
       {/* URL Input Overlay - Hidden when video is playing */}
       {!showVideo && (
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
           <div className="mb-4">
-            <input
-              type="text"
-              value={videoUrl}
-              onChange={handleUrlChange}
-              placeholder="أدخل رابط فيديو يوتيوب..."
-              className={`w-full max-w-md px-4 py-2 border-2 rounded-lg text-right backdrop-blur-sm ${
-                theme === 'light'
-                  ? 'border-gray-300 bg-white/80 text-black placeholder-gray-500'
-                  : 'border-gray-600 bg-black/80 text-white placeholder-gray-400'
-              }`}
-            />
+            <div className="flex gap-2 max-w-md">
+              <input
+                type="text"
+                value={videoUrl}
+                onChange={handleUrlChange}
+                placeholder="أدخل رابط فيديو يوتيوب..."
+                className={`flex-1 px-4 py-2 border-2 rounded-lg text-right backdrop-blur-sm ${
+                  theme === 'light'
+                    ? 'border-gray-300 bg-white/80 text-black placeholder-gray-500'
+                    : 'border-gray-600 bg-black/80 text-white placeholder-gray-400'
+                }`}
+              />
+              {videoId && (
+                <button
+                  onClick={handleStart}
+                  disabled={isRunning}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    theme === 'light'
+                      ? 'bg-green-500 text-white hover:bg-green-600 disabled:bg-gray-300'
+                      : 'bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-600'
+                  }`}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                    ></path>
+                  </svg>
+                  تشغيل
+                </button>
+              )}
+            </div>
             {videoUrl && !videoId && (
               <p className={`text-sm mt-2 ${
                 theme === 'light' ? 'text-red-600' : 'text-red-400'
