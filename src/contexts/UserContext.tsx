@@ -154,15 +154,36 @@ export function UserProvider({ children }: { children: ReactNode }) {
             }));
             console.log('📊 Mapped users to frontend format:', userAccounts.length);
             
-            // Always preserve current user local changes
+            // CRITICAL: Always preserve current user's local changes
             const currentUser = users.find(u => u.accountId === currentAccountId);
             if (currentUser) {
               const updatedCurrentUser = userAccounts.find(u => u.accountId === currentAccountId);
               if (updatedCurrentUser) {
-                // Always keep local username and avatar for current user
+                // NEVER overwrite current user's local username and avatar
                 updatedCurrentUser.username = currentUser.username;
                 updatedCurrentUser.avatar = currentUser.avatar;
                 updatedCurrentUser.lastActive = currentUser.lastActive;
+                
+                // Also check localStorage as additional backup
+                if (typeof window !== 'undefined') {
+                  const localUsername = localStorage.getItem(`username_${currentAccountId}`);
+                  const localAvatar = localStorage.getItem(`avatar_${currentAccountId}`);
+                  
+                  if (localUsername && localUsername !== updatedCurrentUser.username) {
+                    updatedCurrentUser.username = localUsername;
+                    console.log('🔄 Restored username from localStorage in real-time:', localUsername);
+                  }
+                  
+                  if (localAvatar && localAvatar !== updatedCurrentUser.avatar) {
+                    updatedCurrentUser.avatar = localAvatar;
+                    console.log('� Restored avatar from localStorage in real-time:', localAvatar);
+                  }
+                }
+                
+                console.log('�🔒 Preserved current user local data:', {
+                  username: updatedCurrentUser.username,
+                  avatar: updatedCurrentUser.avatar
+                });
               }
             }
             
@@ -259,13 +280,32 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const accountInfo = getAccountInfo();
     console.log('📋 Account info:', accountInfo);
     
+    // Restore username and avatar from localStorage if available
+    let savedUsername = accountInfo.username;
+    let savedAvatar = '👤';
+    
+    if (typeof window !== 'undefined') {
+      const localUsername = localStorage.getItem(`username_${accountInfo.accountId}`);
+      const localAvatar = localStorage.getItem(`avatar_${accountInfo.accountId}`);
+      
+      if (localUsername) {
+        savedUsername = localUsername;
+        console.log('🔄 Restored username from localStorage:', localUsername);
+      }
+      
+      if (localAvatar) {
+        savedAvatar = localAvatar;
+        console.log('🔄 Restored avatar from localStorage:', localAvatar);
+      }
+    }
+    
     const currentAccount: UserAccountFrontend = {
       id: undefined, // Will be set by database
       accountId: accountInfo.accountId,
-      username: accountInfo.username,
+      username: savedUsername,
       email: accountInfo.email,
       hashKey: accountInfo.hashKey,
-      avatar: '👤',
+      avatar: savedAvatar,
       score: 0,
       rank: 1,
       studyTime: 0,
@@ -347,6 +387,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const updateUserName = (name: string) => {
     if (!currentAccountId) return;
     
+    // Save to localStorage as backup
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`username_${currentAccountId}`, name);
+    }
+    
     setUsers(prevUsers => {
       const newUsers = prevUsers.map(user => {
         if (user.accountId === currentAccountId) {
@@ -369,6 +414,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const updateUserAvatar = (avatar: string) => {
     if (!currentAccountId) return;
+    
+    // Save to localStorage as backup
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`avatar_${currentAccountId}`, avatar);
+    }
     
     setUsers(prevUsers => {
       const newUsers = prevUsers.map(user => {
