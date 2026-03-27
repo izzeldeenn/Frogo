@@ -16,8 +16,9 @@ import { CountdownTimer } from './CountdownTimer';
 import { YouTubeTimer } from './YouTubeTimer';
 import { UserActivityDashboard } from './UserActivityDashboard';
 import { PDFStudyTimer } from './PDFStudyTimer';
+import { TaskBoard } from './TaskBoard';
 
-type TimerType = 'stopwatch' | 'pomodoro' | 'countdown' | 'youtube' | 'dashboard' | 'pdf';
+type TimerType = 'stopwatch' | 'pomodoro' | 'countdown' | 'youtube' | 'dashboard' | 'pdf' | 'tasks';
 
 export function ServiceSelector() {
   const { theme } = useTheme();
@@ -51,6 +52,8 @@ export function ServiceSelector() {
         return <UserActivityDashboard />;
       case 'pdf':
         return <PDFStudyTimer />;
+      case 'tasks':
+        return <TaskBoard />;
       default:
         return <Timer />;
     }
@@ -63,7 +66,8 @@ export function ServiceSelector() {
     { id: 'countdown', type: 'countdown' as TimerType, label: t.countdown, icon: '⏳' },
     { id: 'youtube', type: 'youtube' as TimerType, label: t.youtube, icon: '🎬' },
     { id: 'dashboard', type: 'dashboard' as TimerType, label: t.rank === 'ترتيب' ? 'لوحة التحكم' : 'Dashboard', icon: '📈' },
-    { id: 'pdf', type: 'pdf' as TimerType, label: t.rank === 'ترتيب' ? 'دراسة PDF' : 'PDF Study', icon: '📚' }
+    { id: 'pdf', type: 'pdf' as TimerType, label: t.rank === 'ترتيب' ? 'دراسة PDF' : 'PDF Study', icon: '📚' },
+    { id: 'tasks', type: 'tasks' as TimerType, label: t.tasks === 'المهام' ? 'tasks' : 'Tasks', icon: '✅' }
   ];
 
   // Check scroll position for mobile

@@ -68,7 +68,19 @@ const translations = {
     coinsToday: 'Coins Today',
     points: 'Points',
     up: 'Up',
-    down: 'Down'
+    down: 'Down',
+    // Task Board
+    taskBoard: 'Task Board',
+    todayTasks: 'Today\'s Tasks',
+    tasksForDay: 'Tasks for',
+    addTask: 'Add Task',
+    newTaskPlaceholder: 'Add a new task...',
+    noTasks: 'No tasks for this day',
+    addTaskToStart: 'Add a task to get started',
+    progress: 'Progress',
+    completedAt: 'Completed at',
+    todayBtn: 'Today',
+    tasks: 'Tasks'
   },
   ar: {
     // Timer
@@ -133,7 +145,19 @@ const translations = {
     coinsToday: 'عملات اليوم',
     points: 'نقاط',
     up: 'صاعد',
-    down: 'نازل'
+    down: 'نازل',
+    // Task Board
+    taskBoard: 'سبورة المهام',
+    todayTasks: 'مهام اليوم',
+    tasksForDay: 'مهام يوم',
+    addTask: 'إضافة مهمة',
+    newTaskPlaceholder: 'أضف مهمة جديدة...',
+    noTasks: 'لا توجد مهام لهذا اليوم',
+    addTaskToStart: 'أضف مهمة جديدة للبدء',
+    progress: 'التقدم',
+    completedAt: 'تم الإكمال في',
+    todayBtn: 'اليوم',
+    tasks: 'المهام'
   }
 };
 

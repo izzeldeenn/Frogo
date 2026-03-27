@@ -3,14 +3,73 @@ export interface MusicTrack {
   id: string;
   name: string;
   artist: string;
-  category: 'lofi' | 'ambient' | 'nature' | 'classical' | 'piano';
-  duration: string; // in seconds
+  category: 'lofi' | 'ambient' | 'nature' | 'classical' | 'piano' | 'radio';
+  duration: string; // in seconds, or 'live' for radio streams
   url: string;
   thumbnail: string;
   mood: 'focus' | 'relax' | 'energetic' | 'calm';
+  isLive?: boolean; // for radio streams
 }
 
 export const MUSIC_TRACKS: MusicTrack[] = [
+  // Quran Radio - Primary Track
+  {
+    id: 'quran-cairo-primary',
+    name: 'إذاعة القرآن الكريم من القاهرة',
+    artist: 'Abdulbasit Abdusamad',
+    category: 'radio',
+    duration: '1350', // 22.5 minutes
+    url: 'https://dn710109.ca.archive.org/0/items/Mobasher-Ezaa/%D8%A7%D9%84%D8%B9%D9%84%D9%82%20%D8%A7%D9%84%D9%89%20%D8%AE%D8%AA%D8%A7%D9%85%20%D8%A7%D9%84%D9%82%D8%B1%D8%A7%D9%86%20%D9%85%D8%B9%20%D8%A7%D9%84%D8%AF%D8%B9%D8%A7%D8%A1%20%D8%B9%D8%A8%D8%AF%20%D8%A7%D9%84%D8%A8%D8%A7%D8%B3%D8%B7_kena.mp3',
+    thumbnail: '/music/thumbnails/quran-radio.jpg',
+    mood: 'calm',
+    isLive: true
+  },
+  {
+    id: 'quran-cairo-2022',
+    name: 'إذاعة القرآن الكريم - تسجيل 2022',
+    artist: 'Quran Radio Cairo',
+    category: 'radio',
+    duration: '2400', // 40 minutes
+    url: 'https://dn710109.ca.archive.org/0/items/Mobasher-Ezaa/2022-Original-New-15-3-22.MP3',
+    thumbnail: '/music/thumbnails/quran-radio.jpg',
+    mood: 'calm',
+    isLive: true
+  },
+  {
+    id: 'quran-cairo-manshawi',
+    name: 'إذاعة القرآن الكريم - المنشاوي',
+    artist: 'Al-Manshawi',
+    category: 'radio',
+    duration: '1800', // 30 minutes
+    url: 'https://ia601705.us.archive.org/28/items/Mobasher-Ezaa/%D8%A7%D9%84%D9%85%D9%86%D8%B4%D8%A7%D9%88%D9%89%20%D8%A7%D9%84%D8%A7%D8%AD%D8%B2%D8%A7%D8%A8%20%D9%85%D9%86%2021%20%D8%A7%D9%84%D9%89%2027_kena.mp3',
+    thumbnail: '/music/thumbnails/quran-radio.jpg',
+    mood: 'calm',
+    isLive: true
+  },
+
+  // Radio Stations - Quran MP3 Files
+  {
+    id: 'quran-cairo',
+    name: 'إذاعة القرآن الكريم من القاهرة',
+    artist: 'Abdulbasit Abdusamad',
+    category: 'radio',
+    duration: '600', // 10 minutes
+    url: 'https://dn710109.ca.archive.org/0/items/Mobasher-Ezaa/002-%D8%A7%D9%84%D8%A8%D9%82%D8%B1%D8%A9%20%D9%85%D9%86%20278%20%D8%A7%D9%84%D9%89%20282%20%D8%A7%D9%84%D8%A7%D8%B0%D8%A7%D8%B9%D8%A9%20%D8%A7%D9%84%D9%85%D8%B5%D8%B1%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B3%D8%AA%D9%8A%D9%86%D9%8A%D8%A7%D8%AA.mp3',
+    thumbnail: '/music/thumbnails/quran-radio.jpg',
+    mood: 'calm',
+    isLive: true
+  },
+  {
+    id: 'quran-cairo-maher',
+    name: 'قرآن من القاهرة',
+    artist: 'Maher Al-Muaiqly',
+    category: 'radio',
+    duration: '2668', // 44.5 minutes
+    url: 'https://dn710109.ca.archive.org/0/items/Mobasher-Ezaa/12-Yusuf-1-34-High-Quality.mp3',
+    thumbnail: '/music/thumbnails/quran-radio.jpg',
+    mood: 'calm',
+    isLive: true
+  },
   // HoliznaCC0 Lo-fi Tracks - CC0 Licensed
   {
     id: 'holizna-bubbles',
@@ -91,7 +150,7 @@ export const MUSIC_TRACKS: MusicTrack[] = [
     url: '/music/HoliznaCC0 - When Time Called Me Darling ( Lofi, Relaxing, Chill).mp3',
     thumbnail: '/music/thumbnails/piano-meditation.jpg',
     mood: 'relax'
-  }
+  },
 ];
 
 // Music categories with icons
@@ -100,7 +159,8 @@ export const MUSIC_CATEGORIES = [
   { id: 'ambient', name: 'Ambient', icon: '🌌', description: 'موسيقى بيئية للتركيز' },
   { id: 'nature', name: 'Nature', icon: '🌿', description: 'أصوات الطبيعة المريحة' },
   { id: 'classical', name: 'Classical', icon: '🎼', description: 'موسيقى كلاسيكية هادئة' },
-  { id: 'piano', name: 'Piano', icon: '🎹', description: 'بيانو منفرد للتركيز' }
+  { id: 'piano', name: 'Piano', icon: '🎹', description: 'بيانو منفرد للتركيز' },
+  { id: 'radio', name: 'Radio', icon: '📻', description: 'إذاعات مباشرة' }
 ];
 
 // Mood filters
